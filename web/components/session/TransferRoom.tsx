@@ -1,0 +1,125 @@
+"use client";
+
+import { useEffect } from "react";
+import { useTranslations } from "next-intl";
+import { useSearchParams } from "next/navigation";
+import { ConnectionStatus } from "@/components/session/ConnectionStatus";
+import { SessionSettings } from "@/components/session/SessionSettings";
+import { FileSendBar } from "@/components/session/FileSendBar";
+import { MessageComposer } from "@/components/session/MessageComposer";
+import { UnifiedItemList } from "@/components/session/UnifiedItemList";
+import { ActivityLog } from "@/components/session/ActivityLog";
+import { useSignaling } from "@/hooks/use-signaling";
+import { useTransfer } from "@/hooks/use-transfer";
+import { useThemeEffect } from "@/hooks/use-theme-effect";
+import { useRoomStore } from "@/lib/stores/room-store";
+import { useTransferStore } from "@/lib/stores/transfer-store";
+import { parseBinaryChunk } from "@/lib/webrtc/datachannel";
+import type { ChatPayload, FileMetaPayload } from "@/lib/webrtc/file-transfer";
+import { purgeExpiredRecords } from "@/lib/storage/resume-store";
+
+type Props = {
+  roomId: string;
+};
+
+export function TransferRoom({ roomId }: Props) {
+  const t = useTranslations("session");
+  const searchParams = useSearchParams();
+  const code = useRoomStore((s) => s.code) ?? searchParams.get("code") ?? undefined;
+  const role = useRoomStore((s) => s.role) ?? (code ? "guest" : "host");
+  const revealMessage = useTransferStore((s) => s.revealMessage);
+  const addItem = useTransferStore((s) => s.addItem);
+
+  useThemeEffect();
+
+  const signaling = useSignaling(roomId, role as "host" | "guest", code ?? undefined);
+  const transfer = useTransfer(signaling, roomId);
+
+  useEffect(() => {
+    void purgeExpiredRecords();
+  }, []);
+
+  useEffect(() => {
+    const dc = signaling.dataChannel;
+    if (!dc) return;
+
+    const offMeta = dc.on("file-meta", (payload) => {
+      transfer.handleIncomingMeta(payload as FileMetaPayload);
+    });
+    const offChat = dc.on("chat", (payload) => {
+      const chat = payload as ChatPayload;
+      addItem({
+        kind: "message",
+        id: chat.id,
+        direction: "recv",
+        text: chat.text,
+        at: chat.at,
+        format: chat.format ?? "markdown",
+        masked: chat.masked,
+        revealed: !chat.masked,
+      });
+    });
+    const offBinary = dc.onBinary((data) => {
+      const parsed = parseBinaryChunk(data);
+      if (parsed) {
+        void transfer.handleChunk(parsed.transferId, parsed.offset, parsed.payload);
+      }
+    });
+
+    return () => {
+      offMeta();
+      offChat();
+      offBinary();
+    };
+  }, [addItem, signaling.dataChannel, transfer]);
+
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      const transferring = useTransferStore
+        .getState()
+        .items.some(
+          (i) => i.kind === "file" && i.status === "transferring",
+        );
+      if (transferring) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, []);
+
+  const disabled = !signaling.peerOnline;
+
+  return (
+    <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 lg:flex-row">
+      <div className="flex min-w-0 flex-1 flex-col gap-4 lg:w-2/3">
+        <div className="flex items-center justify-between border-b border-border pb-4">
+          <div>
+            <p className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">
+              {t("title")}
+            </p>
+            <h1 className="mt-1 font-mono text-xl font-bold">{roomId}</h1>
+          </div>
+          <ConnectionStatus />
+        </div>
+
+        <UnifiedItemList
+          onAccept={transfer.onAcceptFile}
+          onReject={transfer.onRejectFile}
+          onDownload={transfer.downloadFile}
+          onResume={transfer.resumeFile}
+          onReveal={revealMessage}
+        />
+
+        <ActivityLog />
+      </div>
+
+      <aside className="flex w-full flex-col gap-4 lg:w-1/3">
+        <SessionSettings />
+        <FileSendBar onSend={transfer.sendFiles} disabled={disabled} />
+        <MessageComposer onSend={transfer.sendMessage} disabled={disabled} />
+      </aside>
+    </div>
+  );
+}
