@@ -1,0 +1,31 @@
+services:
+  pairlink:
+    image: ghcr.io/${GHCR_OWNER:-local}/pairlink:${PAIRLINK_TAG:-latest}
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${PUBLIC_URL:-}
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      PAIRLINK_LOAD_DOTENV: "false"
+    ports:
+      - "${PORT:-8080}:8080"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      coturn:
+        condition: service_started
+
+  coturn:
+    image: coturn/coturn:4.6.2
+    network_mode: host
+    volumes:
+      - ./deploy/coturn/turnserver.conf:/etc/coturn/turnserver.conf:ro
+    restart: unless-stopped
