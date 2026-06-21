@@ -1,0 +1,73 @@
+{
+  "common": {
+    "appName": "PairLink",
+    "tagline": "Self-hosted, end-to-end file transfer in your browser",
+    "loading": "Loading…",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "close": "Close",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "retry": "Retry",
+    "back": "Back"
+  },
+  "home": {
+    "title": "Transfer files securely",
+    "subtitle": "Peer-to-peer, encrypted, no cloud required",
+    "send": "Send files",
+    "receive": "Receive files",
+    "sendDescription": "Create a room and share a link or QR code",
+    "receiveDescription": "Enter a room code or scan a QR code"
+  },
+  "session": {
+    "title": "Transfer session",
+    "roomId": "Room ID",
+    "waiting": "Waiting for peer…",
+    "connected": "Connected",
+    "disconnected": "Disconnected",
+    "files": "Files",
+    "upload": "Upload",
+    "download": "Download",
+    "progress": "Progress"
+  },
+  "auth": {
+    "title": "Authentication",
+    "password": "Password",
+    "enterPassword": "Enter room password",
+    "invalidPassword": "Invalid password",
+    "required": "Password required"
+  },
+  "errors": {
+    "generic": "Something went wrong",
+    "notFound": "Page not found",
+    "network": "Network error",
+    "connectionFailed": "Connection failed",
+    "roomNotFound": "Room not found",
+    "sessionExpired": "Session expired"
+  },
+  "file": {
+    "name": "File name",
+    "size": "Size",
+    "type": "Type",
+    "status": "Status",
+    "pending": "Pending",
+    "transferring": "Transferring",
+    "complete": "Complete",
+    "failed": "Failed",
+    "dropzone": "Drop files here or click to browse"
+  },
+  "connection": {
+    "status": "Connection status",
+    "connecting": "Connecting…",
+    "connected": "Connected",
+    "reconnecting": "Reconnecting…",
+    "offline": "Offline",
+    "latency": "Latency"
+  },
+  "theme": {
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System",
+    "toggle": "Toggle theme"
+  }
+}

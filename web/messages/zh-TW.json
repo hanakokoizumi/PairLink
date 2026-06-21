@@ -1,0 +1,73 @@
+{
+  "common": {
+    "appName": "PairLink",
+    "tagline": "自託管、端對端加密的瀏覽器檔案傳輸",
+    "loading": "載入中…",
+    "cancel": "取消",
+    "confirm": "確認",
+    "close": "關閉",
+    "copy": "複製",
+    "copied": "已複製！",
+    "retry": "重試",
+    "back": "返回"
+  },
+  "home": {
+    "title": "安全傳輸檔案",
+    "subtitle": "點對點加密，無需雲端",
+    "send": "傳送檔案",
+    "receive": "接收檔案",
+    "sendDescription": "建立房間並分享連結或 QR 碼",
+    "receiveDescription": "輸入房間碼或掃描 QR 碼"
+  },
+  "session": {
+    "title": "傳輸工作階段",
+    "roomId": "房間 ID",
+    "waiting": "等待對方連線…",
+    "connected": "已連線",
+    "disconnected": "已中斷",
+    "files": "檔案",
+    "upload": "上傳",
+    "download": "下載",
+    "progress": "進度"
+  },
+  "auth": {
+    "title": "身分驗證",
+    "password": "密碼",
+    "enterPassword": "輸入房間密碼",
+    "invalidPassword": "密碼無效",
+    "required": "需要密碼"
+  },
+  "errors": {
+    "generic": "出了點問題",
+    "notFound": "找不到頁面",
+    "network": "網路錯誤",
+    "connectionFailed": "連線失敗",
+    "roomNotFound": "找不到房間",
+    "sessionExpired": "工作階段已過期"
+  },
+  "file": {
+    "name": "檔案名稱",
+    "size": "大小",
+    "type": "類型",
+    "status": "狀態",
+    "pending": "等待中",
+    "transferring": "傳輸中",
+    "complete": "完成",
+    "failed": "失敗",
+    "dropzone": "拖放檔案到此處或點擊瀏覽"
+  },
+  "connection": {
+    "status": "連線狀態",
+    "connecting": "連線中…",
+    "connected": "已連線",
+    "reconnecting": "重新連線中…",
+    "offline": "離線",
+    "latency": "延遲"
+  },
+  "theme": {
+    "light": "淺色",
+    "dark": "深色",
+    "system": "跟隨系統",
+    "toggle": "切換主題"
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "common": {
+    "appName": "PairLink",
+    "tagline": "セルフホスト型、エンドツーエンド暗号化のブラウザファイル転送",
+    "loading": "読み込み中…",
+    "cancel": "キャンセル",
+    "confirm": "確認",
+    "close": "閉じる",
+    "copy": "コピー",
+    "copied": "コピーしました！",
+    "retry": "再試行",
+    "back": "戻る"
+  },
+  "home": {
+    "title": "ファイルを安全に転送",
+    "subtitle": "P2P暗号化、クラウド不要",
+    "send": "ファイルを送信",
+    "receive": "ファイルを受信",
+    "sendDescription": "ルームを作成してリンクまたはQRコードを共有",
+    "receiveDescription": "ルームコードを入力するかQRコードをスキャン"
+  },
+  "session": {
+    "title": "転送セッション",
+    "roomId": "ルーム ID",
+    "waiting": "ピアを待機中…",
+    "connected": "接続済み",
+    "disconnected": "切断",
+    "files": "ファイル",
+    "upload": "アップロード",
+    "download": "ダウンロード",
+    "progress": "進捗"
+  },
+  "auth": {
+    "title": "認証",
+    "password": "パスワード",
+    "enterPassword": "ルームパスワードを入力",
+    "invalidPassword": "パスワードが無効です",
+    "required": "パスワードが必要です"
+  },
+  "errors": {
+    "generic": "問題が発生しました",
+    "notFound": "ページが見つかりません",
+    "network": "ネットワークエラー",
+    "connectionFailed": "接続に失敗しました",
+    "roomNotFound": "ルームが見つかりません",
+    "sessionExpired": "セッションの有効期限が切れました"
+  },
+  "file": {
+    "name": "ファイル名",
+    "size": "サイズ",
+    "type": "種類",
+    "status": "ステータス",
+    "pending": "待機中",
+    "transferring": "転送中",
+    "complete": "完了",
+    "failed": "失敗",
+    "dropzone": "ファイルをドロップするかクリックして選択"
+  },
+  "connection": {
+    "status": "接続状態",
+    "connecting": "接続中…",
+    "connected": "接続済み",
+    "reconnecting": "再接続中…",
+    "offline": "オフライン",
+    "latency": "レイテンシ"
+  },
+  "theme": {
+    "light": "ライト",
+    "dark": "ダーク",
+    "system": "システム",
+    "toggle": "テーマを切り替え"
+  }
+}
