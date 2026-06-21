@@ -7,6 +7,7 @@ import { ThemeProvider } from "next-themes";
 import { Toaster } from "sonner";
 import { routing } from "@/i18n/routing";
 import { AppHeader } from "@/components/layout/AppHeader";
+import { ConfigProvider } from "@/components/providers/ConfigProvider";
 import { GeekBackground } from "@/components/layout/GeekBackground";
 import "./globals.css";
 
@@ -62,9 +63,11 @@ export default async function LocaleLayout({ children, params }: Props) {
       <body className="min-h-full flex flex-col font-sans antialiased">
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
           <NextIntlClientProvider messages={messages}>
-            <GeekBackground />
-            <AppHeader />
-            <main className="flex flex-1 flex-col">{children}</main>
+            <ConfigProvider>
+              <GeekBackground />
+              <AppHeader />
+              <main className="flex flex-1 flex-col">{children}</main>
+            </ConfigProvider>
             <Toaster
               theme="dark"
               position="bottom-right"

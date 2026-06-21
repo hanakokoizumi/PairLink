@@ -1,7 +1,7 @@
 {
   "common": {
     "appName": "PairLink",
-    "tagline": "셀프 호스팅, 엔드투엔드 암호화 브라우저 파일 전송",
+    "tagline": "셀프 호스팅 E2E 브라우저 파일 전송",
     "loading": "로딩 중…",
     "cancel": "취소",
     "confirm": "확인",
@@ -17,33 +17,71 @@
     "send": "파일 보내기",
     "receive": "파일 받기",
     "sendDescription": "방을 만들고 링크 또는 QR 코드 공유",
-    "receiveDescription": "방 코드 입력 또는 QR 코드 스캔"
+    "receiveDescription": "연결 코드 입력 또는 QR 코드 스캔",
+    "joinConnection": "연결 참가",
+    "noLoginRequired": "참가에 로그인이 필요 없습니다",
+    "startConnection": "연결 시작"
   },
   "session": {
     "title": "전송 세션",
     "roomId": "방 ID",
-    "waiting": "피어 대기 중…",
+    "roomCode": "연결 코드",
+    "waiting": "상대방 연결 대기 중…",
     "connected": "연결됨",
     "disconnected": "연결 끊김",
     "files": "파일",
     "upload": "업로드",
     "download": "다운로드",
-    "progress": "진행률"
+    "progress": "진행률",
+    "settings": "설정",
+    "settingsHint": "이 옵션은 서버 관리자가 구성합니다.",
+    "autoAccept": "파일 자동 수락",
+    "defaultMask": "보낼 때 기본 마스크",
+    "maxFileSize": "최대 파일 크기",
+    "maxMessageLength": "최대 메시지 길이",
+    "resumeEnabled": "이어받기 전송",
+    "messages": "메시지",
+    "activity": "활동 로그",
+    "showContent": "내용 표시",
+    "maskedSent": "마스크된 메시지",
+    "copyMessage": "복사",
+    "tabWrite": "작성",
+    "tabPreview": "미리보기",
+    "markdownHint": "Markdown 지원",
+    "leaveWarning": "전송 중입니다. 나가시겠습니까?",
+    "sendMessage": "메시지 보내기",
+    "maskMessage": "마스크하여 보내기"
   },
   "auth": {
     "title": "인증",
     "password": "비밀번호",
+    "username": "사용자 이름",
     "enterPassword": "방 비밀번호 입력",
-    "invalidPassword": "잘못된 비밀번호",
-    "required": "비밀번호 필요"
+    "invalidPassword": "비밀번호가 올바르지 않습니다",
+    "required": "비밀번호가 필요합니다",
+    "login": "로그인",
+    "loginWithOidc": "OIDC 로그인",
+    "startConnection": "연결 시작"
   },
   "errors": {
     "generic": "문제가 발생했습니다",
     "notFound": "페이지를 찾을 수 없습니다",
     "network": "네트워크 오류",
     "connectionFailed": "연결 실패",
-    "roomNotFound": "방을 찾을 수 없습니다",
-    "sessionExpired": "세션이 만료되었습니다"
+    "roomNotFound": "연결 코드가 유효하지 않거나 만료되었습니다",
+    "sessionExpired": "세션이 만료되었습니다",
+    "invalidCredentials": "사용자 이름 또는 비밀번호가 올바르지 않습니다",
+    "oidcForbidden": "로그인이 허용되지 않습니다",
+    "roomFull": "방이 가득 찼습니다",
+    "roomExpired": "세션이 만료되었습니다",
+    "unauthorized": "먼저 로그인하세요",
+    "fileTooLarge": "파일이 크기 제한을 초과합니다",
+    "messageTooLong": "메시지가 너무 깁니다",
+    "rateLimited": "요청이 너무 많습니다. 나중에 다시 시도하세요",
+    "invalidCode": "연결 코드는 5자리 숫자여야 합니다",
+    "peerDisconnected": "상대방 연결 끊김",
+    "webrtcUnsupported": "이 브라우저는 WebRTC를 지원하지 않습니다",
+    "resumeUnavailable": "보내기를 재개하려면 파일을 다시 선택하세요"
   },
   "file": {
     "name": "파일 이름",
@@ -54,7 +92,15 @@
     "transferring": "전송 중",
     "complete": "완료",
     "failed": "실패",
-    "dropzone": "파일을 여기에 놓거나 클릭하여 찾아보기"
+    "dropzone": "파일을 끌어다 놓거나 클릭하여 찾아보기",
+    "select": "파일 선택",
+    "send": "파일 보내기",
+    "download": "다운로드",
+    "accept": "수락",
+    "reject": "거부",
+    "resume": "이어받기",
+    "interrupted": "중단됨",
+    "resuming": "이어받기 중"
   },
   "connection": {
     "status": "연결 상태",
@@ -62,7 +108,13 @@
     "connected": "연결됨",
     "reconnecting": "재연결 중…",
     "offline": "오프라인",
-    "latency": "지연 시간"
+    "latency": "지연",
+    "webrtc": "WebRTC",
+    "relay": "릴레이",
+    "sessionReady": "세션 준비 완료",
+    "expiresIn": "{minutes}분 후 만료",
+    "peerOffline": "상대방 오프라인",
+    "switchingRelay": "릴레이 모드로 전환 중…"
   },
   "theme": {
     "light": "라이트",

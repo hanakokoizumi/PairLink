@@ -17,33 +17,71 @@
     "send": "发送文件",
     "receive": "接收文件",
     "sendDescription": "创建房间并分享链接或二维码",
-    "receiveDescription": "输入房间码或扫描二维码"
+    "receiveDescription": "输入房间码或扫描二维码",
+    "joinConnection": "加入连接",
+    "noLoginRequired": "加入无需登录",
+    "startConnection": "启动连接"
   },
   "session": {
     "title": "传输会话",
     "roomId": "房间 ID",
+    "roomCode": "连接码",
     "waiting": "等待对方连接…",
     "connected": "已连接",
     "disconnected": "已断开",
     "files": "文件",
     "upload": "上传",
     "download": "下载",
-    "progress": "进度"
+    "progress": "进度",
+    "settings": "设置",
+    "settingsHint": "以下选项由服务器管理员配置。",
+    "autoAccept": "自动接收文件",
+    "defaultMask": "默认掩码发送",
+    "maxFileSize": "最大文件大小",
+    "maxMessageLength": "最大消息长度",
+    "resumeEnabled": "断点续传",
+    "messages": "消息",
+    "activity": "活动日志",
+    "showContent": "展示内容",
+    "maskedSent": "掩码消息",
+    "copyMessage": "复制",
+    "tabWrite": "编写",
+    "tabPreview": "预览",
+    "markdownHint": "支持 Markdown",
+    "leaveWarning": "传输进行中，确定离开？",
+    "sendMessage": "发送消息",
+    "maskMessage": "掩码发送"
   },
   "auth": {
     "title": "身份验证",
     "password": "密码",
+    "username": "用户名",
     "enterPassword": "输入房间密码",
     "invalidPassword": "密码无效",
-    "required": "需要密码"
+    "required": "需要密码",
+    "login": "登录",
+    "loginWithOidc": "OIDC 登录",
+    "startConnection": "启动连接"
   },
   "errors": {
     "generic": "出了点问题",
     "notFound": "页面未找到",
     "network": "网络错误",
     "connectionFailed": "连接失败",
-    "roomNotFound": "房间未找到",
-    "sessionExpired": "会话已过期"
+    "roomNotFound": "连接码无效或已过期",
+    "sessionExpired": "会话已过期",
+    "invalidCredentials": "用户名或密码无效",
+    "oidcForbidden": "您无权登录",
+    "roomFull": "房间已满",
+    "roomExpired": "会话已过期",
+    "unauthorized": "请先登录",
+    "fileTooLarge": "文件超过大小限制",
+    "messageTooLong": "消息过长",
+    "rateLimited": "请求过于频繁，请稍后再试",
+    "invalidCode": "连接码必须为 5 位数字",
+    "peerDisconnected": "对方已断开",
+    "webrtcUnsupported": "此浏览器不支持 WebRTC",
+    "resumeUnavailable": "请重新选择文件以继续发送"
   },
   "file": {
     "name": "文件名",
@@ -54,7 +92,15 @@
     "transferring": "传输中",
     "complete": "完成",
     "failed": "失败",
-    "dropzone": "拖放文件到此处或点击浏览"
+    "dropzone": "拖放文件到此处或点击浏览",
+    "select": "选择文件",
+    "send": "发送文件",
+    "download": "下载",
+    "accept": "接收",
+    "reject": "拒绝",
+    "resume": "续传",
+    "interrupted": "已中断",
+    "resuming": "续传中"
   },
   "connection": {
     "status": "连接状态",
@@ -62,7 +108,13 @@
     "connected": "已连接",
     "reconnecting": "重新连接中…",
     "offline": "离线",
-    "latency": "延迟"
+    "latency": "延迟",
+    "webrtc": "WebRTC",
+    "relay": "中继",
+    "sessionReady": "会话已就绪",
+    "expiresIn": "{minutes} 分钟后过期",
+    "peerOffline": "对方离线",
+    "switchingRelay": "正在切换到中继模式…"
   },
   "theme": {
     "light": "浅色",

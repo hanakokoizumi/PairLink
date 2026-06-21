@@ -17,33 +17,71 @@
     "send": "傳送檔案",
     "receive": "接收檔案",
     "sendDescription": "建立房間並分享連結或 QR 碼",
-    "receiveDescription": "輸入房間碼或掃描 QR 碼"
+    "receiveDescription": "輸入房間碼或掃描 QR 碼",
+    "joinConnection": "加入連線",
+    "noLoginRequired": "加入無需登入",
+    "startConnection": "啟動連線"
   },
   "session": {
     "title": "傳輸工作階段",
     "roomId": "房間 ID",
+    "roomCode": "連線碼",
     "waiting": "等待對方連線…",
     "connected": "已連線",
     "disconnected": "已中斷",
     "files": "檔案",
     "upload": "上傳",
     "download": "下載",
-    "progress": "進度"
+    "progress": "進度",
+    "settings": "設定",
+    "settingsHint": "以下選項由伺服器管理員設定。",
+    "autoAccept": "自動接收檔案",
+    "defaultMask": "預設遮罩傳送",
+    "maxFileSize": "最大檔案大小",
+    "maxMessageLength": "最大訊息長度",
+    "resumeEnabled": "斷點續傳",
+    "messages": "訊息",
+    "activity": "活動記錄",
+    "showContent": "顯示內容",
+    "maskedSent": "遮罩訊息",
+    "copyMessage": "複製",
+    "tabWrite": "撰寫",
+    "tabPreview": "預覽",
+    "markdownHint": "支援 Markdown",
+    "leaveWarning": "傳輸進行中，確定離開？",
+    "sendMessage": "傳送訊息",
+    "maskMessage": "遮罩傳送"
   },
   "auth": {
     "title": "身分驗證",
     "password": "密碼",
+    "username": "使用者名稱",
     "enterPassword": "輸入房間密碼",
     "invalidPassword": "密碼無效",
-    "required": "需要密碼"
+    "required": "需要密碼",
+    "login": "登入",
+    "loginWithOidc": "OIDC 登入",
+    "startConnection": "啟動連線"
   },
   "errors": {
     "generic": "出了點問題",
     "notFound": "找不到頁面",
     "network": "網路錯誤",
     "connectionFailed": "連線失敗",
-    "roomNotFound": "找不到房間",
-    "sessionExpired": "工作階段已過期"
+    "roomNotFound": "連線碼無效或已過期",
+    "sessionExpired": "工作階段已過期",
+    "invalidCredentials": "使用者名稱或密碼無效",
+    "oidcForbidden": "您無權登入",
+    "roomFull": "房間已滿",
+    "roomExpired": "工作階段已過期",
+    "unauthorized": "請先登入",
+    "fileTooLarge": "檔案超過大小限制",
+    "messageTooLong": "訊息過長",
+    "rateLimited": "請求過於頻繁，請稍後再試",
+    "invalidCode": "連線碼必須為 5 位數字",
+    "peerDisconnected": "對方已斷線",
+    "webrtcUnsupported": "此瀏覽器不支援 WebRTC",
+    "resumeUnavailable": "請重新選擇檔案以繼續傳送"
   },
   "file": {
     "name": "檔案名稱",
@@ -54,7 +92,15 @@
     "transferring": "傳輸中",
     "complete": "完成",
     "failed": "失敗",
-    "dropzone": "拖放檔案到此處或點擊瀏覽"
+    "dropzone": "拖放檔案到此處或點擊瀏覽",
+    "select": "選擇檔案",
+    "send": "傳送檔案",
+    "download": "下載",
+    "accept": "接收",
+    "reject": "拒絕",
+    "resume": "續傳",
+    "interrupted": "已中斷",
+    "resuming": "續傳中"
   },
   "connection": {
     "status": "連線狀態",
@@ -62,7 +108,13 @@
     "connected": "已連線",
     "reconnecting": "重新連線中…",
     "offline": "離線",
-    "latency": "延遲"
+    "latency": "延遲",
+    "webrtc": "WebRTC",
+    "relay": "中繼",
+    "sessionReady": "工作階段已就緒",
+    "expiresIn": "{minutes} 分鐘後過期",
+    "peerOffline": "對方離線",
+    "switchingRelay": "正在切換到中繼模式…"
   },
   "theme": {
     "light": "淺色",

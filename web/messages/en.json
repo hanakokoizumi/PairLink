@@ -17,33 +17,71 @@
     "send": "Send files",
     "receive": "Receive files",
     "sendDescription": "Create a room and share a link or QR code",
-    "receiveDescription": "Enter a room code or scan a QR code"
+    "receiveDescription": "Enter a room code or scan a QR code",
+    "joinConnection": "Join connection",
+    "noLoginRequired": "No login required to join",
+    "startConnection": "Start connection"
   },
   "session": {
     "title": "Transfer session",
     "roomId": "Room ID",
+    "roomCode": "Connection code",
     "waiting": "Waiting for peer…",
     "connected": "Connected",
     "disconnected": "Disconnected",
     "files": "Files",
     "upload": "Upload",
     "download": "Download",
-    "progress": "Progress"
+    "progress": "Progress",
+    "settings": "Settings",
+    "settingsHint": "These options are configured by the server administrator.",
+    "autoAccept": "Auto-accept files",
+    "defaultMask": "Default mask on send",
+    "maxFileSize": "Max file size",
+    "maxMessageLength": "Max message length",
+    "resumeEnabled": "Resume transfers",
+    "messages": "Messages",
+    "activity": "Activity",
+    "showContent": "Show content",
+    "maskedSent": "Masked message",
+    "copyMessage": "Copy",
+    "tabWrite": "Write",
+    "tabPreview": "Preview",
+    "markdownHint": "Markdown supported",
+    "leaveWarning": "A transfer is in progress. Leave anyway?",
+    "sendMessage": "Send message",
+    "maskMessage": "Mask message"
   },
   "auth": {
     "title": "Authentication",
     "password": "Password",
+    "username": "Username",
     "enterPassword": "Enter room password",
     "invalidPassword": "Invalid password",
-    "required": "Password required"
+    "required": "Password required",
+    "login": "Sign in",
+    "loginWithOidc": "Sign in with OIDC",
+    "startConnection": "Start connection"
   },
   "errors": {
     "generic": "Something went wrong",
     "notFound": "Page not found",
     "network": "Network error",
     "connectionFailed": "Connection failed",
-    "roomNotFound": "Room not found",
-    "sessionExpired": "Session expired"
+    "roomNotFound": "Invalid or expired connection code",
+    "sessionExpired": "Session expired",
+    "invalidCredentials": "Invalid username or password",
+    "oidcForbidden": "You are not allowed to sign in",
+    "roomFull": "This room is full",
+    "roomExpired": "This session has expired",
+    "unauthorized": "Please sign in first",
+    "fileTooLarge": "File exceeds maximum size",
+    "messageTooLong": "Message is too long",
+    "rateLimited": "Too many requests, please try again later",
+    "invalidCode": "Connection code must be 5 digits",
+    "peerDisconnected": "Peer disconnected",
+    "webrtcUnsupported": "WebRTC is not supported in this browser",
+    "resumeUnavailable": "Re-select the file to resume sending"
   },
   "file": {
     "name": "File name",
@@ -54,7 +92,15 @@
     "transferring": "Transferring",
     "complete": "Complete",
     "failed": "Failed",
-    "dropzone": "Drop files here or click to browse"
+    "dropzone": "Drop files here or click to browse",
+    "select": "Select files",
+    "send": "Send files",
+    "download": "Download",
+    "accept": "Accept",
+    "reject": "Reject",
+    "resume": "Resume",
+    "interrupted": "Interrupted",
+    "resuming": "Resuming"
   },
   "connection": {
     "status": "Connection status",
@@ -62,7 +108,13 @@
     "connected": "Connected",
     "reconnecting": "Reconnecting…",
     "offline": "Offline",
-    "latency": "Latency"
+    "latency": "Latency",
+    "webrtc": "WebRTC",
+    "relay": "Relay",
+    "sessionReady": "Session ready",
+    "expiresIn": "Expires in {minutes} min",
+    "peerOffline": "Peer offline",
+    "switchingRelay": "Switching to relay mode…"
   },
   "theme": {
     "light": "Light",
