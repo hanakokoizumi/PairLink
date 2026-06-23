@@ -6,14 +6,22 @@ const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 const nextConfig: NextConfig = {
   output: "standalone",
   async rewrites() {
+    const api =
+      process.env.INTERNAL_API_URL ??
+      process.env.NEXT_PUBLIC_API_URL ??
+      "http://localhost:8080";
     return [
       {
         source: "/api/:path*",
-        destination: "http://localhost:8080/api/:path*",
+        destination: `${api}/api/:path*`,
       },
       {
-        source: "/ws/:path*",
-        destination: "http://localhost:8080/ws/:path*",
+        source: "/health",
+        destination: `${api}/health`,
+      },
+      {
+        source: "/ws",
+        destination: `${api}/ws`,
       },
     ];
   },

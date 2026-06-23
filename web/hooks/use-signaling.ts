@@ -136,14 +136,9 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
             role: wsConfig.role,
           }));
 
-          const peer = setupPeer(config.rtcConfig);
-          if (wsConfig.role === "host") {
-            signaling.hostJoin(roomId, token ?? undefined);
-          } else {
-            signaling.joinRoom({ roomId, code });
+          if (!peerRef.current) {
+            setupPeer(config.rtcConfig);
           }
-
-          signaling.e2eHandshake("", serializePublicKey(keyPairRef.current!.publicKeyJwk));
         });
 
         signaling.on("peer-joined", (payload) => {
@@ -152,8 +147,18 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
           setPeerOnline(true);
           setState((s) => ({ ...s, peerOnline: true, remotePeerId: remoteId }));
           addActivity("Peer joined");
+
+          if (!peerRef.current) {
+            setupPeer(config.rtcConfig);
+          }
           if (peerRef.current && role === "host") {
             void negotiate(peerRef.current, true);
+          }
+          if (keyPairRef.current) {
+            signaling.e2eHandshake(
+              remoteId,
+              serializePublicKey(keyPairRef.current.publicKeyJwk),
+            );
           }
         });
 
@@ -195,6 +200,9 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
             peerKey,
           );
           relayRef.current?.setSessionKey(sessionKeyRef.current);
+          if (remotePeerIdRef.current) {
+            relayRef.current?.setPeerId(remotePeerIdRef.current);
+          }
         });
 
         if (role === "host") {

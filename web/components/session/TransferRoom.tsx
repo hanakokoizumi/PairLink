@@ -40,38 +40,52 @@ export function TransferRoom({ roomId }: Props) {
   }, []);
 
   useEffect(() => {
-    const dc = signaling.dataChannel;
-    if (!dc) return;
+    type MessageSource = {
+      on: (type: string, handler: (payload: unknown) => void) => () => void;
+      onBinary: (handler: (data: ArrayBuffer) => void) => () => void;
+    };
 
-    const offMeta = dc.on("file-meta", (payload) => {
-      transfer.handleIncomingMeta(payload as FileMetaPayload);
-    });
-    const offChat = dc.on("chat", (payload) => {
-      const chat = payload as ChatPayload;
-      addItem({
-        kind: "message",
-        id: chat.id,
-        direction: "recv",
-        text: chat.text,
-        at: chat.at,
-        format: chat.format ?? "markdown",
-        masked: chat.masked,
-        revealed: !chat.masked,
+    const attach = (source: MessageSource | null) => {
+      if (!source) return () => undefined;
+
+      const offMeta = source.on("file-meta", (payload) => {
+        transfer.handleIncomingMeta(payload as FileMetaPayload);
       });
-    });
-    const offBinary = dc.onBinary((data) => {
-      const parsed = parseBinaryChunk(data);
-      if (parsed) {
-        void transfer.handleChunk(parsed.transferId, parsed.offset, parsed.payload);
-      }
-    });
+      const offChat = source.on("chat", (payload) => {
+        const chat = payload as ChatPayload;
+        addItem({
+          kind: "message",
+          id: chat.id,
+          direction: "recv",
+          text: chat.text,
+          at: chat.at,
+          format: chat.format ?? "markdown",
+          masked: chat.masked,
+          revealed: !chat.masked,
+        });
+      });
+      const offBinary = source.onBinary((data) => {
+        const parsed = parseBinaryChunk(data);
+        if (parsed) {
+          void transfer.handleChunk(parsed.transferId, parsed.offset, parsed.payload);
+        }
+      });
+
+      return () => {
+        offMeta();
+        offChat();
+        offBinary();
+      };
+    };
+
+    const cleanupDc = attach(signaling.dataChannel);
+    const cleanupRelay = attach(signaling.relay);
 
     return () => {
-      offMeta();
-      offChat();
-      offBinary();
+      cleanupDc();
+      cleanupRelay();
     };
-  }, [addItem, signaling.dataChannel, transfer]);
+  }, [addItem, signaling.dataChannel, signaling.relay, transfer]);
 
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {

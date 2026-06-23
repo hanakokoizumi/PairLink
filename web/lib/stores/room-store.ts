@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { createRoom, lookupRoom } from "@/lib/api";
+import { localizeShareUrl } from "@/lib/locale-url";
 import { useAuthStore } from "@/lib/stores/auth-store";
 
 export type RoomRole = "host" | "guest";
@@ -13,7 +14,7 @@ type RoomState = {
   url: string | null;
   wsConnected: boolean;
   peerOnline: boolean;
-  createRoom: () => Promise<void>;
+  createRoom: (locale?: string) => Promise<void>;
   joinByCode: (code: string) => Promise<string>;
   setRoom: (data: {
     roomId: string;
@@ -38,14 +39,14 @@ export const useRoomStore = create<RoomState>((set) => ({
   url: null,
   wsConnected: false,
   peerOnline: false,
-  createRoom: async () => {
+  createRoom: async (locale?: string) => {
     const token = useAuthStore.getState().token ?? undefined;
     const room = await createRoom(token);
     set({
       roomId: room.roomId,
       code: room.code,
       expiresAt: room.expiresAt,
-      url: room.url,
+      url: locale ? localizeShareUrl(room.url, locale) : room.url,
       role: "host",
     });
   },

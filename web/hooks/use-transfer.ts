@@ -35,7 +35,8 @@ function getTransport(signaling: SignalingState): Transport | null {
   if (signaling.relay) {
     return {
       send: (type, payload) => void signaling.relay!.send(type, payload),
-      sendBinary: (id, _offset, chunk) => void signaling.relay!.sendBinary(id, chunk),
+      sendBinary: (id, offset, chunk) =>
+        void signaling.relay!.sendBinary(id, offset, chunk),
     };
   }
   return null;

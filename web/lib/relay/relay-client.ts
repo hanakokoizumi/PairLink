@@ -1,4 +1,5 @@
 import type { SignalingClient } from "@/lib/webrtc/signaling";
+import { frameBinaryChunk, parseBinaryChunk } from "@/lib/webrtc/datachannel";
 import {
   decryptChunk,
   encryptChunk,
@@ -13,6 +14,7 @@ export type RelayMessage = {
 export class RelayClient {
   private seq = 0;
   private handlers = new Map<string, Set<(payload: unknown) => void>>();
+  private binaryHandlers = new Set<(data: ArrayBuffer) => void>();
 
   constructor(
     private signaling: SignalingClient,
@@ -30,15 +32,21 @@ export class RelayClient {
     return () => this.handlers.get(type)?.delete(handler);
   }
 
+  onBinary(handler: (data: ArrayBuffer) => void) {
+    this.binaryHandlers.add(handler);
+    return () => this.binaryHandlers.delete(handler);
+  }
+
   setSessionKey(key: CryptoKey | null) {
     this.sessionKey = key;
   }
 
+  setPeerId(peerId: string) {
+    this.peerId = peerId;
+  }
+
   async send(type: string, payload?: unknown) {
-    if (!this.sessionKey) {
-      this.dispatch(type, payload);
-      return;
-    }
+    if (!this.sessionKey) return;
     const plaintext = new TextEncoder().encode(
       JSON.stringify({ type, payload }),
     );
@@ -52,9 +60,10 @@ export class RelayClient {
     });
   }
 
-  async sendBinary(transferId: string, data: ArrayBuffer) {
+  async sendBinary(transferId: string, offset: number, data: ArrayBuffer) {
     if (!this.sessionKey) return;
-    const encrypted = await encryptChunk(this.sessionKey, data);
+    const framed = frameBinaryChunk(transferId, offset, data);
+    const encrypted = await encryptChunk(this.sessionKey, framed);
     this.signaling.relayChunk({
       transferId,
       seq: this.seq++,
@@ -79,7 +88,10 @@ export class RelayClient {
         const msg = JSON.parse(text) as RelayMessage;
         this.dispatch(msg.type, msg.payload);
       } catch {
-        this.dispatch("binary", plain);
+        const parsed = parseBinaryChunk(plain);
+        if (parsed) {
+          this.dispatchBinary(plain);
+        }
       }
     } catch {
       // decryption failed
@@ -90,5 +102,9 @@ export class RelayClient {
     const set = this.handlers.get(type);
     if (!set) return;
     for (const handler of set) handler(payload);
+  }
+
+  private dispatchBinary(data: ArrayBuffer) {
+    for (const handler of this.binaryHandlers) handler(data);
   }
 }

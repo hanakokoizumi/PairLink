@@ -59,16 +59,24 @@ export class DataChannelClient {
     chunk: ArrayBuffer,
   ) {
     if (this.channel.readyState !== "open") return;
-    const idBytes = parseTransferId(transferId);
-    const buf = new ArrayBuffer(1 + 16 + 8 + chunk.byteLength);
-    const view = new DataView(buf);
-    const bytes = new Uint8Array(buf);
-    bytes[0] = BINARY_MARKER;
-    bytes.set(idBytes, 1);
-    view.setBigUint64(17, BigInt(offset), false);
-    bytes.set(new Uint8Array(chunk), 25);
-    this.channel.send(buf);
+    this.channel.send(frameBinaryChunk(transferId, offset, chunk));
   }
+}
+
+export function frameBinaryChunk(
+  transferId: string,
+  offset: number,
+  chunk: ArrayBuffer,
+): ArrayBuffer {
+  const idBytes = parseTransferId(transferId);
+  const buf = new ArrayBuffer(1 + 16 + 8 + chunk.byteLength);
+  const view = new DataView(buf);
+  const bytes = new Uint8Array(buf);
+  bytes[0] = BINARY_MARKER;
+  bytes.set(idBytes, 1);
+  view.setBigUint64(17, BigInt(offset), false);
+  bytes.set(new Uint8Array(chunk), 25);
+  return buf;
 }
 
 export function parseBinaryChunk(data: ArrayBuffer): {
