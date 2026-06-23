@@ -139,6 +139,26 @@ func (h *Handler) handleHostJoin(c *Client, payload any) error {
 		return err
 	}
 
+	// Idempotent re-join for the same connection.
+	if existingRoom, existingPeer, ok := h.rooms.GetRoomByConnID(c.ConnID()); ok {
+		if existingRoom.ID == r.ID && existingPeer.ID != "" {
+			if err := c.SendJSON(Envelope{
+				Type: "ws-config",
+				Payload: WSConfigPayload{
+					PeerID:          existingPeer.ID,
+					RoomID:          r.ID,
+					Role:            string(room.RoleHost),
+					WSFallback:      h.cfg.WSFallback,
+					MaxMessageBytes: h.cfg.WSMaxMessageBytes,
+				},
+			}); err != nil {
+				return err
+			}
+			h.notifyExistingPeers(c, r, existingPeer.ID)
+			return nil
+		}
+	}
+
 	peerID := uuid.NewString()
 	peer := &room.Peer{
 		ID:       peerID,
@@ -152,7 +172,7 @@ func (h *Handler) handleHostJoin(c *Client, payload any) error {
 	_ = h.rooms.SetHostPeerID(r.ID, peerID)
 	c.SetPeer(peerID, r.ID, string(room.RoleHost))
 
-	return c.SendJSON(Envelope{
+	if err := c.SendJSON(Envelope{
 		Type: "ws-config",
 		Payload: WSConfigPayload{
 			PeerID:          peerID,
@@ -161,7 +181,35 @@ func (h *Handler) handleHostJoin(c *Client, payload any) error {
 			WSFallback:      h.cfg.WSFallback,
 			MaxMessageBytes: h.cfg.WSMaxMessageBytes,
 		},
+	}); err != nil {
+		return err
+	}
+
+	joined, _ := json.Marshal(Envelope{
+		Type: "peer-joined",
+		Payload: PeerJoinedPayload{
+			PeerID: peerID,
+			Role:   string(room.RoleHost),
+		},
 	})
+	h.hub.BroadcastToRoom(r.ID, joined, c.ConnID())
+	h.notifyExistingPeers(c, r, peerID)
+	return nil
+}
+
+func (h *Handler) notifyExistingPeers(c *Client, r *room.Room, selfPeerID string) {
+	for id, p := range r.Peers {
+		if id == selfPeerID {
+			continue
+		}
+		_ = c.SendJSON(Envelope{
+			Type: "peer-joined",
+			Payload: PeerJoinedPayload{
+				PeerID: p.ID,
+				Role:   string(p.Role),
+			},
+		})
+	}
 }
 
 func (h *Handler) handleJoinRoom(c *Client, payload any) error {
@@ -187,6 +235,26 @@ func (h *Handler) handleJoinRoom(c *Client, payload any) error {
 	}
 	if p.RoomID != "" && p.Code != "" && r.Code != p.Code {
 		return room.ErrRoomNotFound
+	}
+
+	// Idempotent re-join for the same connection.
+	if existingRoom, existingPeer, ok := h.rooms.GetRoomByConnID(c.ConnID()); ok {
+		if existingRoom.ID == r.ID && existingPeer.ID != "" {
+			if err := c.SendJSON(Envelope{
+				Type: "ws-config",
+				Payload: WSConfigPayload{
+					PeerID:          existingPeer.ID,
+					RoomID:          r.ID,
+					Role:            string(room.RoleGuest),
+					WSFallback:      h.cfg.WSFallback,
+					MaxMessageBytes: h.cfg.WSMaxMessageBytes,
+				},
+			}); err != nil {
+				return err
+			}
+			h.notifyExistingPeers(c, r, existingPeer.ID)
+			return nil
+		}
 	}
 
 	peerID := uuid.NewString()
@@ -222,6 +290,7 @@ func (h *Handler) handleJoinRoom(c *Client, payload any) error {
 		},
 	})
 	h.hub.BroadcastToRoom(r.ID, joined, c.ConnID())
+	h.notifyExistingPeers(c, r, peerID)
 	return nil
 }
 
@@ -234,11 +303,29 @@ func (h *Handler) forwardEnvelope(c *Client, env Envelope) error {
 	if !ok {
 		return nil
 	}
-	data, err := json.Marshal(env)
+
+	payload := env.Payload
+	if m, ok := payload.(map[string]any); ok {
+		m["from"] = peer.ID
+		payload = m
+	} else {
+		raw, err := json.Marshal(payload)
+		if err != nil {
+			return err
+		}
+		var m map[string]any
+		if err := json.Unmarshal(raw, &m); err != nil {
+			return err
+		}
+		m["from"] = peer.ID
+		payload = m
+	}
+
+	out, err := json.Marshal(Envelope{Type: env.Type, Payload: payload})
 	if err != nil {
 		return err
 	}
-	if !h.hub.SendToPeer(other.ID, data) {
+	if !h.hub.SendToPeer(other.ID, out) {
 		return fmt.Errorf("peer offline")
 	}
 	return nil
