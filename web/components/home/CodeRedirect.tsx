@@ -24,7 +24,7 @@ export function CodeRedirect({ code }: { code: string }) {
           expiresAt: result.expiresAt,
           role: "guest",
         });
-        router.replace(`/session/${result.roomId}`);
+        router.replace(`/session/${result.roomId}?code=${code}`);
       } catch (err) {
         if (cancelled) return;
         const errCode =

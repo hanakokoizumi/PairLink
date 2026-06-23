@@ -109,6 +109,8 @@ make setup                           # optional: cp .env.example .env
 
 Production checklist: set `JWT_SECRET`, `PUBLIC_URL` (HTTPS), `PAIRLINK_USERS` or OIDC, and TURN for strict NAT (`deploy/coturn/` + `RTC_CONFIG`).
 
+If pulling from GHCR fails in your region, try the mirror image `ghcr.nju.edu.cn/hanakokoizumi/pairlink` (same tags as above).
+
 ## Browser support
 
 | Chrome | Firefox | Safari |

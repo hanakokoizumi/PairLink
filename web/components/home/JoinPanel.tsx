@@ -52,7 +52,7 @@ export function JoinPanel() {
     setLoading(true);
     try {
       const roomId = await joinByCode(code);
-      router.push(`/session/${roomId}`);
+      router.push(`/session/${roomId}?code=${code}`);
     } catch (err) {
       const errCode =
         err instanceof Error && "code" in err
