@@ -203,6 +203,12 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
           if (remotePeerIdRef.current) {
             relayRef.current?.setPeerId(remotePeerIdRef.current);
           }
+          if (from) {
+            signaling.e2eHandshake(
+              from,
+              serializePublicKey(keyPairRef.current.publicKeyJwk),
+            );
+          }
         });
 
         if (role === "host") {
