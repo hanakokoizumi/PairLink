@@ -7,7 +7,9 @@ COPY web/package.json web/pnpm-lock.yaml ./
 RUN corepack enable && pnpm install --frozen-lockfile
 COPY web/ .
 ARG NEXT_PUBLIC_API_URL=
+ARG INTERNAL_API_URL=http://127.0.0.1:8081
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV INTERNAL_API_URL=$INTERNAL_API_URL
 RUN pnpm build
 
 # stage 2: server
@@ -19,13 +21,18 @@ COPY server/ .
 RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o /pairlink ./cmd/pairlink
 
 # stage 3: final
-FROM alpine
+FROM node:alpine
 RUN apk add --no-cache ca-certificates wget
 WORKDIR /app
 COPY --from=server /pairlink .
 COPY --from=web /app/web/.next/standalone ./web/
 COPY --from=web /app/web/.next/static ./web/.next/static
 COPY --from=web /app/web/public ./web/public
+COPY deploy/docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
 EXPOSE 8080
 ENV PAIRLINK_LOAD_DOTENV=false
-ENTRYPOINT ["/app/pairlink"]
+ENV PAIRLINK_API_PORT=8081
+ENV PAIRLINK_WEB_PORT=8080
+ENV HOSTNAME=0.0.0.0
+ENTRYPOINT ["/docker-entrypoint.sh"]
