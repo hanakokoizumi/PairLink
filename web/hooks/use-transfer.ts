@@ -11,8 +11,10 @@ import {
   validateFileSize,
 } from "@/lib/webrtc/file-transfer";
 import {
+  appendChunk,
   assembleBlob,
   deleteResumeRecord,
+  getResumeRecord,
   saveResumeRecord,
 } from "@/lib/storage/resume-store";
 import { useConfigStore } from "@/lib/stores/config-store";
@@ -198,18 +200,25 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
     async (transferId: string, offset: number, payload: ArrayBuffer) => {
       const item = useTransferStore.getState().items.find((i) => i.id === transferId);
       if (!item || item.kind !== "file") return;
+      if (item.status === "awaiting_accept" || item.status === "rejected") return;
+
       const receivedBytes = offset + payload.byteLength;
-      await saveResumeRecord({
-        transferId,
-        roomId,
-        name: item.name,
-        size: item.size,
-        mime: item.mime,
-        receivedBytes,
-        chunks: [payload],
-        direction: "recv",
-        updatedAt: Date.now(),
-      });
+      const existing = await getResumeRecord(transferId);
+      if (existing) {
+        await appendChunk(transferId, payload, receivedBytes);
+      } else {
+        await saveResumeRecord({
+          transferId,
+          roomId,
+          name: item.name,
+          size: item.size,
+          mime: item.mime,
+          receivedBytes,
+          chunks: [payload],
+          direction: "recv",
+          updatedAt: Date.now(),
+        });
+      }
       updateProgress(transferId, receivedBytes, item.size);
       if (receivedBytes >= item.size) {
         const record = await import("@/lib/storage/resume-store").then((m) =>
