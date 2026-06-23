@@ -3,6 +3,7 @@ web/.env.local
 node_modules/
 web/node_modules/
 web/.next/
+web/pnpm-workspace.yaml
 bin/
 server/coverage.out
 web/coverage/
