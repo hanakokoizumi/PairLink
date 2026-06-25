@@ -9,6 +9,7 @@ export class PeerConnection {
   private pc: RTCPeerConnection;
   private events: PeerEvents;
   private dataChannel: RTCDataChannel | null = null;
+  private pendingCandidates: RTCIceCandidateInit[] = [];
 
   constructor(rtcConfig: RTCConfiguration, events: PeerEvents = {}) {
     this.events = events;
@@ -55,6 +56,7 @@ export class PeerConnection {
 
   async handleOffer(sdp: RTCSessionDescriptionInit): Promise<RTCSessionDescriptionInit> {
     await this.pc.setRemoteDescription(sdp);
+    await this.flushPendingCandidates();
     const answer = await this.pc.createAnswer();
     await this.pc.setLocalDescription(answer);
     return answer;
@@ -62,11 +64,32 @@ export class PeerConnection {
 
   async handleAnswer(sdp: RTCSessionDescriptionInit) {
     await this.pc.setRemoteDescription(sdp);
+    await this.flushPendingCandidates();
   }
 
   async addIceCandidate(candidate: RTCIceCandidateInit) {
     if (!candidate.candidate) return;
-    await this.pc.addIceCandidate(candidate);
+    if (!this.pc.remoteDescription) {
+      this.pendingCandidates.push(candidate);
+      return;
+    }
+    try {
+      await this.pc.addIceCandidate(candidate);
+    } catch {
+      this.pendingCandidates.push(candidate);
+    }
+  }
+
+  private async flushPendingCandidates() {
+    const pending = [...this.pendingCandidates];
+    this.pendingCandidates = [];
+    for (const candidate of pending) {
+      try {
+        await this.pc.addIceCandidate(candidate);
+      } catch {
+        // ignore stale candidates
+      }
+    }
   }
 
   close() {
