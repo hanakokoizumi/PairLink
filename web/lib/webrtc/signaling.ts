@@ -70,6 +70,10 @@ export class SignalingClient {
       socket.onmessage = (event) => {
         try {
           const env = JSON.parse(event.data as string) as WsEnvelope;
+          if (env.type === "ping") {
+            this.sendRaw({ type: "pong" });
+            return;
+          }
           this.dispatch(env.type, env.payload);
         } catch {
           // ignore malformed frames
