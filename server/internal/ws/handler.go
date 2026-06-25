@@ -69,23 +69,53 @@ func originPatterns(publicURL string) []string {
 }
 
 func (h *Handler) handleMessage(c *Client, env Envelope) error {
+	var err error
 	switch env.Type {
 	case "auth":
-		return h.handleAuth(c, env.Payload)
+		err = h.handleAuth(c, env.Payload)
 	case "host-join":
-		return h.handleHostJoin(c, env.Payload)
+		err = h.handleHostJoin(c, env.Payload)
 	case "join-room":
-		return h.handleJoinRoom(c, env.Payload)
+		err = h.handleJoinRoom(c, env.Payload)
 	case "signal":
-		return h.forwardEnvelope(c, env)
+		err = h.forwardEnvelope(c, env)
 	case "e2e-handshake":
-		return h.forwardEnvelope(c, env)
+		err = h.forwardEnvelope(c, env)
 	case "chat":
-		return h.forwardEnvelope(c, env)
+		err = h.forwardEnvelope(c, env)
 	case "relay-chunk":
-		return h.handleRelayChunk(c, env.Payload)
+		err = h.handleRelayChunk(c, env.Payload)
 	default:
 		return nil
+	}
+	if err != nil {
+		_ = c.SendJSON(Envelope{
+			Type:    "error",
+			Payload: ErrorPayload{Code: wsErrorCode(err)},
+		})
+	}
+	return err
+}
+
+func wsErrorCode(err error) string {
+	switch {
+	case errors.Is(err, room.ErrRoomNotFound):
+		return "room_not_found"
+	case errors.Is(err, room.ErrRoomExpired):
+		return "room_expired"
+	case errors.Is(err, room.ErrRoomFull):
+		return "room_full"
+	default:
+		return "join_failed"
+	}
+}
+
+func (h *Handler) leaveOtherRoom(c *Client, targetRoomID string) {
+	if existingRoom, _, ok := h.rooms.GetRoomByConnID(c.ConnID()); ok {
+		if existingRoom.ID != targetRoomID {
+			h.rooms.RemovePeer(c.ConnID())
+			c.SetPeer("", "", "")
+		}
 	}
 }
 
@@ -139,6 +169,12 @@ func (h *Handler) handleHostJoin(c *Client, payload any) error {
 		return err
 	}
 
+	if !h.auth.DisableAuth() {
+		if uid := c.UserID(); uid != "" && uid != r.OwnerID {
+			return errors.New("forbidden host join")
+		}
+	}
+
 	// Idempotent re-join for the same connection.
 	if existingRoom, existingPeer, ok := h.rooms.GetRoomByConnID(c.ConnID()); ok {
 		if existingRoom.ID == r.ID && existingPeer.ID != "" {
@@ -159,6 +195,12 @@ func (h *Handler) handleHostJoin(c *Client, payload any) error {
 		}
 	}
 
+	h.leaveOtherRoom(c, r.ID)
+
+	if r.HasConnectedHost(c.ConnID()) {
+		return room.ErrRoomFull
+	}
+
 	peerID := uuid.NewString()
 	peer := &room.Peer{
 		ID:       peerID,
@@ -169,7 +211,6 @@ func (h *Handler) handleHostJoin(c *Client, payload any) error {
 	if err := h.rooms.AddPeer(r.ID, peer); err != nil {
 		return err
 	}
-	_ = h.rooms.SetHostPeerID(r.ID, peerID)
 	c.SetPeer(peerID, r.ID, string(room.RoleHost))
 
 	if err := c.SendJSON(Envelope{
@@ -198,8 +239,8 @@ func (h *Handler) handleHostJoin(c *Client, payload any) error {
 }
 
 func (h *Handler) notifyExistingPeers(c *Client, r *room.Room, selfPeerID string) {
-	for id, p := range r.Peers {
-		if id == selfPeerID {
+	for _, p := range h.rooms.ListPeers(r.ID) {
+		if p.ID == selfPeerID {
 			continue
 		}
 		_ = c.SendJSON(Envelope{
@@ -256,6 +297,8 @@ func (h *Handler) handleJoinRoom(c *Client, payload any) error {
 			return nil
 		}
 	}
+
+	h.leaveOtherRoom(c, r.ID)
 
 	peerID := uuid.NewString()
 	peer := &room.Peer{

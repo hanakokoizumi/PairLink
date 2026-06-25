@@ -6,6 +6,11 @@ type Envelope struct {
 	Payload any    `json:"payload,omitempty"`
 }
 
+// ErrorPayload reports a join or signaling failure to the client.
+type ErrorPayload struct {
+	Code string `json:"code"`
+}
+
 // AuthPayload is sent by clients to authenticate.
 type AuthPayload struct {
 	Token string `json:"token"`
