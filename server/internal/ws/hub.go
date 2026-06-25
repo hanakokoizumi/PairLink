@@ -65,7 +65,7 @@ func (h *Hub) BroadcastToRoom(roomID string, msg []byte, excludeConnID string) {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
 	for _, c := range h.clients {
-		if c.roomID == roomID && c.connID != excludeConnID {
+		if c.RoomID() == roomID && c.ConnID() != excludeConnID {
 			c.TrySend(msg)
 		}
 	}
@@ -76,7 +76,7 @@ func (h *Hub) SendToPeer(peerID string, msg []byte) bool {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
 	for _, c := range h.clients {
-		if c.peerID == peerID {
+		if c.PeerID() == peerID {
 			return c.TrySend(msg)
 		}
 	}

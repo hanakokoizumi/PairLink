@@ -55,11 +55,15 @@ func (c *Client) ConnID() string {
 
 // PeerID returns the assigned peer ID.
 func (c *Client) PeerID() string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	return c.peerID
 }
 
 // RoomID returns the room ID when joined.
 func (c *Client) RoomID() string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	return c.roomID
 }
 
