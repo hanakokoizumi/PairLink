@@ -15,7 +15,7 @@ type Room struct {
 	ID         string
 	Code       string
 	Secret     string
-	HostPeerID string
+	OwnerID    string
 	CreatedAt  time.Time
 	ExpiresAt  time.Time
 	Peers      map[string]*Peer
@@ -47,6 +47,16 @@ func (r *Room) FindPeerByConnID(connID string) (*Peer, bool) {
 		}
 	}
 	return nil, false
+}
+
+// HasConnectedHost reports whether another connection already hosts the room.
+func (r *Room) HasConnectedHost(excludeConnID string) bool {
+	for _, p := range r.Peers {
+		if p.Role == RoleHost && p.ConnID != excludeConnID {
+			return true
+		}
+	}
+	return false
 }
 
 // OtherPeer returns the peer that is not the given peer ID.

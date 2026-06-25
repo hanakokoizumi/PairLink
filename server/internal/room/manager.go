@@ -106,7 +106,7 @@ func (m *Manager) Create(hostPeerID string) (*Room, error) {
 		ID:         roomID,
 		Code:       code,
 		Secret:     secret,
-		HostPeerID: hostPeerID,
+		OwnerID:    hostPeerID,
 		CreatedAt:  now,
 		ExpiresAt:  now.Add(m.ttl),
 		Peers:      make(map[string]*Peer),
@@ -198,15 +198,19 @@ func (m *Manager) GetRoomByConnID(connID string) (*Room, *Peer, bool) {
 	return nil, nil, false
 }
 
-// SetHostPeerID updates the host peer ID after WS registration.
-func (m *Manager) SetHostPeerID(roomID, hostPeerID string) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
+// ListPeers returns a snapshot of peers in a room.
+func (m *Manager) ListPeers(roomID string) []*Peer {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
 
 	r, err := m.getRoomLocked(roomID)
 	if err != nil {
-		return err
+		return nil
 	}
-	r.HostPeerID = hostPeerID
-	return nil
+	out := make([]*Peer, 0, len(r.Peers))
+	for _, p := range r.Peers {
+		peer := *p
+		out = append(out, &peer)
+	}
+	return out
 }
