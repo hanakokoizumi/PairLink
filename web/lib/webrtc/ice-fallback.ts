@@ -23,6 +23,7 @@ export class IceFallbackMonitor {
     }
 
     if (state === "disconnected") {
+      if (this.disconnectedTimer) clearTimeout(this.disconnectedTimer);
       this.disconnectedTimer = setTimeout(() => {
         this.options.onDisconnected?.();
       }, 5000);
@@ -35,6 +36,7 @@ export class IceFallbackMonitor {
     }
 
     if (state === "checking" || state === "new") {
+      if (this.timer) clearTimeout(this.timer);
       this.timer = setTimeout(() => {
         this.triggerFallback();
       }, this.options.timeoutMs);
