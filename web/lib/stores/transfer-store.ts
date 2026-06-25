@@ -73,6 +73,9 @@ export const useTransferStore = create<TransferState>((set, get) => ({
       ),
     }),
   updateProgress: (id, receivedBytes, total) => {
+    const item = get().items.find((i) => i.id === id);
+    if (!item || item.kind !== "file") return;
+    if (item.status === "awaiting_accept" || item.status === "rejected") return;
     const progress = total > 0 ? Math.min(100, (receivedBytes / total) * 100) : 0;
     get().updateItem(id, {
       receivedBytes,
