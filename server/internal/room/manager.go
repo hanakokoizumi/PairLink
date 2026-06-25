@@ -130,8 +130,6 @@ func (m *Manager) getRoomLocked(id string) (*Room, error) {
 		return nil, ErrRoomNotFound
 	}
 	if r.IsExpired(m.now()) {
-		delete(m.rooms, id)
-		delete(m.codeToID, r.Code)
 		return nil, ErrRoomExpired
 	}
 	return r, nil
