@@ -192,6 +192,17 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
 
   const handleIncomingMeta = useCallback(
     (meta: FileMetaPayload) => {
+      if (
+        settings &&
+        !validateFileSize(meta.size, settings.fileMaxSizeBytes)
+      ) {
+        transportSend(signaling, "files-transfer-response", {
+          id: meta.id,
+          accepted: false,
+        });
+        addActivity(`Rejected oversized file: ${meta.name}`, "warn");
+        return;
+      }
       const autoAccept = settings?.autoAcceptFiles ?? true;
       addItem({
         kind: "file",
@@ -208,7 +219,30 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
         transportSend(signaling, "files-transfer-response", { id: meta.id, accepted: true });
       }
     },
-    [addItem, settings?.autoAcceptFiles, signaling],
+    [addItem, addActivity, settings, signaling],
+  );
+
+  const handleIncomingChat = useCallback(
+    (chat: ChatPayload) => {
+      if (
+        settings &&
+        chat.text.length > settings.messageMaxLength
+      ) {
+        addActivity("Rejected oversized message", "warn");
+        return;
+      }
+      addItem({
+        kind: "message",
+        id: chat.id,
+        direction: "recv",
+        text: chat.text,
+        at: chat.at,
+        format: chat.format ?? "markdown",
+        masked: chat.masked,
+        revealed: !chat.masked,
+      });
+    },
+    [addActivity, addItem, settings],
   );
 
   const onAcceptFile = useCallback(
@@ -266,6 +300,7 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
       const item = useTransferStore.getState().items.find((i) => i.id === transferId);
       if (!item || item.kind !== "file") return;
       if (item.status === "awaiting_accept" || item.status === "rejected") return;
+      if (offset !== item.receivedBytes) return;
 
       const receivedBytes = offset + payload.byteLength;
       const existing = await getResumeRecord(transferId);
@@ -305,6 +340,7 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
     downloadFile,
     resumeFile,
     handleIncomingMeta,
+    handleIncomingChat,
     onAcceptFile,
     onRejectFile,
     handleChunk,
