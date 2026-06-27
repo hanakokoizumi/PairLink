@@ -27,7 +27,7 @@ func TestRoomHandlers_disableAuth(t *testing.T) {
 	}
 	require.NoError(t, config.ApplyDefaults(cfg))
 
-	rooms := room.NewManager(30 * time.Minute)
+	rooms := room.NewManager(30 * time.Minute, 5)
 	defer rooms.Stop()
 	svc := auth.NewService(auth.NewLocalUserStore(), auth.NewJWTManager("secret", time.Hour), nil, true)
 	h := NewRoomHandlers(cfg, svc, rooms)
@@ -51,7 +51,7 @@ func TestRoomHandlers_requiresAuth(t *testing.T) {
 	}
 	require.NoError(t, config.ApplyDefaults(cfg))
 
-	rooms := room.NewManager(30 * time.Minute)
+	rooms := room.NewManager(30 * time.Minute, 5)
 	defer rooms.Stop()
 	svc := testAuthService(t, false, "")
 	h := NewRoomHandlers(cfg, svc, rooms)
@@ -77,7 +77,7 @@ func TestRoomHandlers_withToken(t *testing.T) {
 	}
 	require.NoError(t, config.ApplyDefaults(cfg))
 
-	rooms := room.NewManager(30 * time.Minute)
+	rooms := room.NewManager(30 * time.Minute, 5)
 	defer rooms.Stop()
 	svc := testAuthService(t, false, "")
 	token, err := svc.Login("admin", "secret")

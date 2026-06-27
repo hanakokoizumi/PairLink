@@ -22,22 +22,27 @@ const maxPeers = 2
 
 // Manager tracks in-memory rooms keyed by ID and join code.
 type Manager struct {
-	mu       sync.RWMutex
-	rooms    map[string]*Room
-	codeToID map[string]string
-	ttl      time.Duration
-	now      func() time.Time
-	stopCh   chan struct{}
+	mu         sync.RWMutex
+	rooms      map[string]*Room
+	codeToID   map[string]string
+	ttl        time.Duration
+	codeLength int
+	now        func() time.Time
+	stopCh     chan struct{}
 }
 
-// NewManager creates a room manager with the given TTL.
-func NewManager(ttl time.Duration) *Manager {
+// NewManager creates a room manager with the given TTL and join code length.
+func NewManager(ttl time.Duration, codeLength int) *Manager {
+	if codeLength <= 0 {
+		codeLength = 5
+	}
 	m := &Manager{
-		rooms:    make(map[string]*Room),
-		codeToID: make(map[string]string),
-		ttl:      ttl,
-		now:      time.Now,
-		stopCh:   make(chan struct{}),
+		rooms:      make(map[string]*Room),
+		codeToID:   make(map[string]string),
+		ttl:        ttl,
+		codeLength: codeLength,
+		now:        time.Now,
+		stopCh:     make(chan struct{}),
 	}
 	go m.cleanupLoop()
 	return m
@@ -84,7 +89,7 @@ func (m *Manager) Create(hostPeerID string) (*Room, error) {
 	defer m.mu.Unlock()
 
 	for i := 0; i < maxCodeRetries; i++ {
-		code, err = GenerateCode()
+		code, err = GenerateCode(m.codeLength)
 		if err != nil {
 			return nil, err
 		}
@@ -196,6 +201,11 @@ func (m *Manager) GetRoomByConnID(connID string) (*Room, *Peer, bool) {
 		}
 	}
 	return nil, nil, false
+}
+
+// CodeLength returns the configured join code length.
+func (m *Manager) CodeLength() int {
+	return m.codeLength
 }
 
 // ListPeers returns a snapshot of peers in a room.

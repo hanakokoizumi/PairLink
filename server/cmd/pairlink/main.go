@@ -84,7 +84,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	roomMgr := room.NewManager(roomTTL)
+	roomMgr := room.NewManager(roomTTL, cfg.RoomCodeLength)
 	defer roomMgr.Stop()
 
 	relayFwd := relay.NewForwarder()

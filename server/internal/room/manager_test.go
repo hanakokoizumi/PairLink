@@ -9,7 +9,7 @@ import (
 )
 
 func TestManager_CreateAndFind(t *testing.T) {
-	m := NewManager(30 * time.Minute)
+	m := NewManager(30 * time.Minute, 5)
 	defer m.Stop()
 
 	r, err := m.Create("host-peer-1")
@@ -28,7 +28,7 @@ func TestManager_CreateAndFind(t *testing.T) {
 }
 
 func TestManager_RoomFull(t *testing.T) {
-	m := NewManager(30 * time.Minute)
+	m := NewManager(30 * time.Minute, 5)
 	defer m.Stop()
 
 	r, err := m.Create("host")
@@ -66,7 +66,7 @@ func TestManager_Expired(t *testing.T) {
 }
 
 func TestManager_RemovePeer(t *testing.T) {
-	m := NewManager(30 * time.Minute)
+	m := NewManager(30 * time.Minute, 5)
 	defer m.Stop()
 
 	r, err := m.Create("host")

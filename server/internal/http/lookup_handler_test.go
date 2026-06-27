@@ -13,7 +13,7 @@ import (
 )
 
 func TestLookupHandler_success(t *testing.T) {
-	m := room.NewManager(30 * time.Minute)
+	m := room.NewManager(30 * time.Minute, 5)
 	defer m.Stop()
 	created, err := m.Create("host")
 	require.NoError(t, err)
@@ -28,7 +28,7 @@ func TestLookupHandler_success(t *testing.T) {
 }
 
 func TestLookupHandler_invalidCode(t *testing.T) {
-	h := NewLookupHandler(room.NewManager(time.Minute))
+	h := NewLookupHandler(room.NewManager(time.Minute, 5))
 	req := httptest.NewRequest(http.MethodGet, "/api/rooms/lookup?code=abc", nil)
 	rec := httptest.NewRecorder()
 	h.Lookup(rec, req)
@@ -36,7 +36,7 @@ func TestLookupHandler_invalidCode(t *testing.T) {
 }
 
 func TestLookupHandler_roomFull(t *testing.T) {
-	m := room.NewManager(30 * time.Minute)
+	m := room.NewManager(30 * time.Minute, 5)
 	defer m.Stop()
 	created, err := m.Create("host")
 	require.NoError(t, err)
@@ -52,7 +52,7 @@ func TestLookupHandler_roomFull(t *testing.T) {
 }
 
 func TestLookupHandler_expired(t *testing.T) {
-	mgr := room.NewManager(time.Millisecond)
+	mgr := room.NewManager(time.Millisecond, 5)
 	defer mgr.Stop()
 	created, err := mgr.Create("host")
 	require.NoError(t, err)

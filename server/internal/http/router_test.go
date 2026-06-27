@@ -26,7 +26,7 @@ func TestRouter_healthAndConfig(t *testing.T) {
 	}
 	require.NoError(t, config.ApplyDefaults(cfg))
 
-	rooms := room.NewManager(30 * time.Minute)
+	rooms := room.NewManager(30 * time.Minute, 5)
 	defer rooms.Stop()
 	hub := ws.NewHub(rooms)
 	svc := auth.NewService(auth.NewLocalUserStore(), auth.NewJWTManager("secret", time.Hour), nil, true)
