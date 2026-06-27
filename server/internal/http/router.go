@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -33,7 +34,7 @@ func NewRouter(deps Deps) http.Handler {
 	r.Use(SecurityHeaders(deps.Config.SecurityHeaders, deps.Config.PublicURL))
 
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{deps.Config.PublicURL, "http://localhost:3000", "http://127.0.0.1:3000"},
+		AllowedOrigins:   allowedOrigins(deps.Config.PublicURL),
 		AllowedMethods:   []string{"GET", "POST", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type"},
 		AllowCredentials: true,
@@ -89,4 +90,13 @@ func NewRouter(deps Deps) http.Handler {
 	}
 
 	return r
+}
+
+func allowedOrigins(publicURL string) []string {
+	publicURL = strings.TrimRight(publicURL, "/")
+	origins := []string{publicURL}
+	if strings.Contains(publicURL, "localhost") || strings.Contains(publicURL, "127.0.0.1") {
+		origins = append(origins, "http://localhost:3000", "http://127.0.0.1:3000")
+	}
+	return origins
 }
