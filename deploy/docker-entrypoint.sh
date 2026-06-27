@@ -23,3 +23,4 @@ while kill -0 "$GO_PID" 2>/dev/null && kill -0 "$WEB_PID" 2>/dev/null; do
   sleep 1
 done
 cleanup
+exit 1
