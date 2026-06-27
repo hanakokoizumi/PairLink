@@ -29,7 +29,7 @@ func ExtractToken(r *http.Request) string {
 	if c, err := r.Cookie(TokenCookieName()); err == nil {
 		return c.Value
 	}
-	return r.URL.Query().Get("token")
+	return ""
 }
 
 // RequireAuth rejects unauthenticated requests unless auth is disabled.
