@@ -12,7 +12,11 @@ import { ActivityLog } from "@/components/session/ActivityLog";
 import { useSignaling } from "@/hooks/use-signaling";
 import { useTransfer } from "@/hooks/use-transfer";
 import { useThemeEffect } from "@/hooks/use-theme-effect";
-import { useRoomStore, loadPersistedSession } from "@/lib/stores/room-store";
+import {
+  useRoomStore,
+  loadPersistedSession,
+  type RoomRole,
+} from "@/lib/stores/room-store";
 import { useTransferStore } from "@/lib/stores/transfer-store";
 import { parseBinaryChunk } from "@/lib/webrtc/datachannel";
 import type { ChatPayload, FileMetaPayload } from "@/lib/webrtc/file-transfer";
@@ -34,13 +38,37 @@ export function TransferRoom({ roomId }: Props) {
   const role =
     useRoomStore((s) => s.role) ??
     persisted?.role ??
-    (code ? "guest" : "host");
+    (code ? "guest" : null);
+
+  if (!role) {
+    return (
+      <div className="flex flex-1 items-center justify-center p-8 text-center">
+        <p className="font-mono text-sm text-muted-foreground">
+          {t("missingSession")}
+        </p>
+      </div>
+    );
+  }
+
+  return <TransferSession roomId={roomId} role={role} code={code} />;
+}
+
+function TransferSession({
+  roomId,
+  role,
+  code,
+}: {
+  roomId: string;
+  role: RoomRole;
+  code?: string;
+}) {
+  const t = useTranslations("session");
+  const connectionMode = useTransferStore((s) => s.connectionMode);
   const revealMessage = useTransferStore((s) => s.revealMessage);
-  const addItem = useTransferStore((s) => s.addItem);
 
   useThemeEffect();
 
-  const signaling = useSignaling(roomId, role as "host" | "guest", code ?? undefined);
+  const signaling = useSignaling(roomId, role, code);
   const transfer = useTransfer(signaling, roomId);
 
   useEffect(() => {
@@ -73,17 +101,7 @@ export function TransferRoom({ roomId }: Props) {
         );
       });
       const offChat = source.on("chat", (payload) => {
-        const chat = payload as ChatPayload;
-        addItem({
-          kind: "message",
-          id: chat.id,
-          direction: "recv",
-          text: chat.text,
-          at: chat.at,
-          format: chat.format ?? "markdown",
-          masked: chat.masked,
-          revealed: !chat.masked,
-        });
+        transfer.handleIncomingChat(payload as ChatPayload);
       });
       const offBinary = source.onBinary((data) => {
         const parsed = parseBinaryChunk(data);
@@ -102,18 +120,20 @@ export function TransferRoom({ roomId }: Props) {
       };
     };
 
-    const cleanupDc = attach(signaling.dataChannel);
-    const cleanupRelay = attach(signaling.relay);
+    const activeSource =
+      connectionMode === "relay"
+        ? signaling.relay
+        : signaling.dataChannel?.readyState === "open"
+          ? signaling.dataChannel
+          : signaling.relay ?? signaling.dataChannel;
 
-    return () => {
-      cleanupDc();
-      cleanupRelay();
-    };
+    return attach(activeSource);
   }, [
-    addItem,
+    connectionMode,
     signaling.dataChannel,
     signaling.relay,
     transfer.handleChunk,
+    transfer.handleIncomingChat,
     transfer.handleIncomingMeta,
     transfer.handleResumeQuery,
     transfer.handleResumeState,

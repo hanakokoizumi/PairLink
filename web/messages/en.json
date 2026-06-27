@@ -24,6 +24,7 @@
   },
   "session": {
     "title": "Transfer session",
+    "missingSession": "Session context was lost. Rejoin from the home page with your connection code.",
     "roomId": "Room ID",
     "roomCode": "Connection code",
     "waiting": "Waiting for peer…",

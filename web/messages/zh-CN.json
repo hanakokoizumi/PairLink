@@ -24,6 +24,7 @@
   },
   "session": {
     "title": "传输会话",
+    "missingSession": "会话信息已丢失，请从首页使用连接码重新加入。",
     "roomId": "房间 ID",
     "roomCode": "连接码",
     "waiting": "等待对方连接…",

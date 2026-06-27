@@ -24,6 +24,7 @@
   },
   "session": {
     "title": "傳輸工作階段",
+    "missingSession": "工作階段資訊已遺失，請從首頁使用連線碼重新加入。",
     "roomId": "房間 ID",
     "roomCode": "連線碼",
     "waiting": "等待對方連線…",

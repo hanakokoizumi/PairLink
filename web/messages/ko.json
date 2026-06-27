@@ -24,6 +24,7 @@
   },
   "session": {
     "title": "전송 세션",
+    "missingSession": "세션 정보가 사라졌습니다. 홈에서 연결 코드로 다시 참여하세요.",
     "roomId": "방 ID",
     "roomCode": "연결 코드",
     "waiting": "상대방 연결 대기 중…",
