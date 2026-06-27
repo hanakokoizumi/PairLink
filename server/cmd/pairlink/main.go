@@ -89,6 +89,7 @@ func run() error {
 
 	relayFwd := relay.NewForwarder()
 	hub := ws.NewHub(roomMgr)
+	roomMgr.SetExpireHandler(hub.NotifyRoomExpired)
 	wsHandler := ws.NewHandler(cfg, authSvc, hub, roomMgr, relayFwd)
 
 	router := httpapi.NewRouter(httpapi.Deps{

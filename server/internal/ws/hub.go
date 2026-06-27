@@ -60,7 +60,21 @@ func (h *Hub) GetClient(connID string) (*Client, bool) {
 	return c, ok
 }
 
-// BroadcastToRoom sends a message to all peers in a room except excludeConnID.
+// NotifyRoomExpired sends a room_expired error to all clients in the room.
+func (h *Hub) NotifyRoomExpired(roomID string) {
+	payload, _ := json.Marshal(Envelope{
+		Type:    "error",
+		Payload: ErrorPayload{Code: "room_expired"},
+	})
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	for _, c := range h.clients {
+		if c.RoomID() == roomID {
+			c.TrySend(payload)
+		}
+	}
+}
+
 func (h *Hub) BroadcastToRoom(roomID string, msg []byte, excludeConnID string) {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
