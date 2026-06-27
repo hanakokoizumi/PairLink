@@ -21,16 +21,24 @@ import (
 
 // Handler serves the WebSocket endpoint.
 type Handler struct {
-	cfg    *config.Config
-	auth   *auth.Service
-	hub    *Hub
-	rooms  *room.Manager
-	relay  *relay.Forwarder
+	cfg         *config.Config
+	auth        *auth.Service
+	hub         *Hub
+	rooms       *room.Manager
+	relay       *relay.Forwarder
+	joinLimiter *joinLimiter
 }
 
 // NewHandler creates a WebSocket HTTP handler.
 func NewHandler(cfg *config.Config, authSvc *auth.Service, hub *Hub, rooms *room.Manager, relayFwd *relay.Forwarder) *Handler {
-	return &Handler{cfg: cfg, auth: authSvc, hub: hub, rooms: rooms, relay: relayFwd}
+	return &Handler{
+		cfg:         cfg,
+		auth:        authSvc,
+		hub:         hub,
+		rooms:       rooms,
+		relay:       relayFwd,
+		joinLimiter: newJoinLimiter(cfg.JoinRateLimit),
+	}
 }
 
 // ServeHTTP upgrades HTTP to WebSocket.
@@ -45,6 +53,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	client := NewClient(conn, h.hub, int64(h.cfg.WSMaxMessageBytes), h.handleMessage)
+	client.SetIP(clientIP(r))
 	h.hub.Register(client)
 
 	ctx, cancel := context.WithCancel(r.Context())
@@ -105,6 +114,8 @@ func wsErrorCode(err error) string {
 		return "room_expired"
 	case errors.Is(err, room.ErrRoomFull):
 		return "room_full"
+	case strings.Contains(err.Error(), "rate limited"):
+		return "rate_limited"
 	default:
 		return "join_failed"
 	}
@@ -273,6 +284,9 @@ func (h *Handler) handleJoinRoom(c *Client, payload any) error {
 	}
 	if err != nil {
 		return err
+	}
+	if p.Code != "" && !h.joinLimiter.allow(c.ClientIP()) {
+		return errors.New("rate limited")
 	}
 	if p.RoomID != "" && p.Code != "" && r.Code != p.Code {
 		return room.ErrRoomNotFound

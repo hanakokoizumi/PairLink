@@ -29,6 +29,7 @@ type Client struct {
 	roomID   string
 	role     string
 	userID   string
+	clientIP string
 	lastPong time.Time
 
 	maxMessageBytes int64
@@ -65,6 +66,20 @@ func (c *Client) RoomID() string {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	return c.roomID
+}
+
+// SetIP records the client IP for rate limiting.
+func (c *Client) SetIP(ip string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.clientIP = ip
+}
+
+// ClientIP returns the client IP address.
+func (c *Client) ClientIP() string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.clientIP
 }
 
 // SetPeer sets peer metadata after join.
