@@ -170,6 +170,20 @@ func (m *Manager) AddPeer(roomID string, peer *Peer) error {
 	if len(r.Peers) >= maxPeers {
 		return ErrRoomFull
 	}
+	if peer.Role == RoleHost {
+		for _, p := range r.Peers {
+			if p.Role == RoleHost {
+				return ErrRoomFull
+			}
+		}
+	}
+	if peer.Role == RoleGuest {
+		for _, p := range r.Peers {
+			if p.Role == RoleGuest {
+				return ErrRoomFull
+			}
+		}
+	}
 	r.Peers[peer.ID] = peer
 	return nil
 }
