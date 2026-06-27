@@ -60,13 +60,15 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
     if (!config?.wsFallback || !signalingRef.current) return;
     setConnectionMode("relay");
     addActivity("Switching to relay mode", "warn");
-    if (!relayRef.current) {
-      relayRef.current = new RelayClient(
-        signalingRef.current,
-        sessionKeyRef.current,
-        remotePeerIdRef.current ?? "",
-      );
-    }
+    peerRef.current?.close();
+    peerRef.current = null;
+    setState((s) => ({ ...s, dataChannel: null }));
+    relayRef.current?.dispose();
+    relayRef.current = new RelayClient(
+      signalingRef.current,
+      sessionKeyRef.current,
+      remotePeerIdRef.current ?? "",
+    );
     setState((s) => ({ ...s, relay: relayRef.current }));
   }, [addActivity, config?.wsFallback, setConnectionMode]);
 
@@ -186,8 +188,11 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
           setPeerOnline(false);
           peerRef.current?.close();
           peerRef.current = null;
+          relayRef.current?.dispose();
           relayRef.current = null;
           remotePeerIdRef.current = null;
+          sessionKeyRef.current = null;
+          handshakeSentRef.current = false;
           setState((s) => ({
             ...s,
             peerOnline: false,
@@ -264,6 +269,7 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
       iceMonitorRef.current?.dispose();
       peerRef.current?.close();
       peerRef.current = null;
+      relayRef.current?.dispose();
       relayRef.current = null;
       handshakeSentRef.current = false;
       signaling.disconnect();

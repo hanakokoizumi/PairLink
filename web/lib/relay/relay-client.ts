@@ -15,15 +15,23 @@ export class RelayClient {
   private seq = 0;
   private handlers = new Map<string, Set<(payload: unknown) => void>>();
   private binaryHandlers = new Set<(data: ArrayBuffer) => void>();
+  private relayChunkOff?: () => void;
 
   constructor(
     private signaling: SignalingClient,
     private sessionKey: CryptoKey | null,
     private peerId: string,
   ) {
-    this.signaling.on("relay-chunk", (payload) => {
+    this.relayChunkOff = this.signaling.on("relay-chunk", (payload) => {
       void this.handleIncoming(payload as EncryptedChunk & { transferId: string });
     });
+  }
+
+  dispose() {
+    this.relayChunkOff?.();
+    this.relayChunkOff = undefined;
+    this.handlers.clear();
+    this.binaryHandlers.clear();
   }
 
   on(type: string, handler: (payload: unknown) => void) {
