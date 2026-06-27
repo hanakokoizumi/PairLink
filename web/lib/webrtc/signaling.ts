@@ -89,9 +89,7 @@ export class SignalingClient {
           const delay = RECONNECT_DELAYS[this.reconnectAttempt]!;
           this.reconnectAttempt++;
           setTimeout(() => {
-            this.connect().then(() => {
-              if (this.joinPayload) this.sendRaw(this.joinPayload);
-            });
+            void this.connect();
           }, delay);
         }
       };
