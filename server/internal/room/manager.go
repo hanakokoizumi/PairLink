@@ -211,6 +211,9 @@ func (m *Manager) GetRoomByConnID(connID string) (*Room, *Peer, bool) {
 
 	for _, r := range m.rooms {
 		if p, ok := r.FindPeerByConnID(connID); ok {
+			if r.IsExpired(m.now()) {
+				return nil, nil, false
+			}
 			return r, p, true
 		}
 	}
