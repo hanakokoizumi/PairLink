@@ -54,6 +54,7 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
   const sessionKeyRef = useRef<CryptoKey | null>(null);
   const relayRef = useRef<RelayClient | null>(null);
   const remotePeerIdRef = useRef<string | null>(null);
+  const handshakeSentRef = useRef(false);
 
   const switchToRelay = useCallback(() => {
     if (!config?.wsFallback || !signalingRef.current) return;
@@ -141,6 +142,11 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
           }
         });
 
+        signaling.on("ws-close", () => {
+          setWsConnected(false);
+          setState((s) => ({ ...s, connected: false }));
+        });
+
         signaling.on("peer-joined", (payload) => {
           const { peerId: remoteId } = payload as { peerId: string };
           remotePeerIdRef.current = remoteId;
@@ -154,18 +160,36 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
           if (peerRef.current && role === "host") {
             void negotiate(peerRef.current, true);
           }
-          if (keyPairRef.current) {
+          if (keyPairRef.current && !handshakeSentRef.current) {
             signaling.e2eHandshake(
               remoteId,
               serializePublicKey(keyPairRef.current.publicKeyJwk),
             );
+            handshakeSentRef.current = true;
           }
         });
 
         signaling.on("peer-left", () => {
           setPeerOnline(false);
-          setState((s) => ({ ...s, peerOnline: false }));
+          peerRef.current?.close();
+          peerRef.current = null;
+          relayRef.current = null;
+          remotePeerIdRef.current = null;
+          setState((s) => ({
+            ...s,
+            peerOnline: false,
+            dataChannel: null,
+            relay: null,
+            remotePeerId: null,
+          }));
           addActivity("Peer disconnected", "warn");
+          for (const item of useTransferStore.getState().items) {
+            if (item.kind === "file" && item.status === "transferring") {
+              useTransferStore.getState().updateItem(item.id, {
+                status: "interrupted",
+              });
+            }
+          }
         });
 
         signaling.on("signal", async (payload) => {
@@ -203,11 +227,12 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
           if (remotePeerIdRef.current) {
             relayRef.current?.setPeerId(remotePeerIdRef.current);
           }
-          if (from) {
+          if (from && keyPairRef.current && !handshakeSentRef.current) {
             signaling.e2eHandshake(
               from,
               serializePublicKey(keyPairRef.current.publicKeyJwk),
             );
+            handshakeSentRef.current = true;
           }
         });
 
@@ -225,6 +250,9 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
       disposed = true;
       iceMonitorRef.current?.dispose();
       peerRef.current?.close();
+      peerRef.current = null;
+      relayRef.current = null;
+      handshakeSentRef.current = false;
       signaling.disconnect();
       setWsConnected(false);
     };
