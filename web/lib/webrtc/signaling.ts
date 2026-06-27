@@ -28,7 +28,6 @@ function wsUrl(token?: string): string {
     const url = new URL(base);
     url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
     url.pathname = "/ws";
-    if (token) url.searchParams.set("token", token);
     return url.toString();
   }
   const proto =
@@ -37,7 +36,7 @@ function wsUrl(token?: string): string {
       : "ws:";
   const host =
     typeof window !== "undefined" ? window.location.host : "localhost:3000";
-  const qs = token ? `?token=${encodeURIComponent(token)}` : "";
+  const qs = "";
   return `${proto}//${host}/ws${qs}`;
 }
 
@@ -61,6 +60,9 @@ export class SignalingClient {
 
       socket.onopen = () => {
         this.reconnectAttempt = 0;
+        if (this.token) {
+          this.sendRaw({ type: "auth", payload: { token: this.token } });
+        }
         if (this.joinPayload) {
           this.sendRaw(this.joinPayload);
         }
