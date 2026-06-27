@@ -3,6 +3,17 @@ import { fetchMe, login as apiLogin } from "@/lib/api";
 
 const TOKEN_KEY = "pairlink:token";
 
+function readToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return sessionStorage.getItem(TOKEN_KEY);
+}
+
+function writeToken(token: string | null) {
+  if (typeof window === "undefined") return;
+  if (token) sessionStorage.setItem(TOKEN_KEY, token);
+  else sessionStorage.removeItem(TOKEN_KEY);
+}
+
 type User = {
   sub: string;
   username: string;
@@ -25,7 +36,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   loading: false,
   hydrate: () => {
     if (typeof window === "undefined") return;
-    const token = localStorage.getItem(TOKEN_KEY);
+    const token = sessionStorage.getItem(TOKEN_KEY);
     if (token) set({ token });
   },
   isAuthenticated: () => Boolean(get().token),
@@ -33,7 +44,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ loading: true });
     try {
       const { token } = await apiLogin(username, password);
-      localStorage.setItem(TOKEN_KEY, token);
+      sessionStorage.setItem(TOKEN_KEY, token);
       set({ token, loading: false });
       await get().fetchMe();
     } catch (err) {
@@ -42,7 +53,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
   logout: () => {
-    localStorage.removeItem(TOKEN_KEY);
+    sessionStorage.removeItem(TOKEN_KEY);
     set({ token: null, user: null });
   },
   fetchMe: async () => {
