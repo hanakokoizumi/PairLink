@@ -278,15 +278,15 @@ func (h *Handler) handleJoinRoom(c *Client, payload any) error {
 	if p.RoomID != "" {
 		r, err = h.rooms.FindByID(p.RoomID)
 	} else if p.Code != "" {
+		if !h.joinLimiter.allow(c.ClientIP()) {
+			return errors.New("rate limited")
+		}
 		r, err = h.rooms.FindByCode(p.Code)
 	} else {
 		return errors.New("missing room identifier")
 	}
 	if err != nil {
 		return err
-	}
-	if p.Code != "" && !h.joinLimiter.allow(c.ClientIP()) {
-		return errors.New("rate limited")
 	}
 	if p.RoomID != "" && p.Code != "" && r.Code != p.Code {
 		return room.ErrRoomNotFound
