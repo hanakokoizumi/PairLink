@@ -64,6 +64,14 @@ export function TransferRoom({ roomId }: Props) {
           payload as { id: string; accepted: boolean },
         );
       });
+      const offResumeQuery = source.on("file-resume-query", (payload) => {
+        void transfer.handleResumeQuery((payload as { id: string }).id);
+      });
+      const offResumeState = source.on("file-resume-state", (payload) => {
+        void transfer.handleResumeState(
+          payload as { id: string; receivedBytes: number },
+        );
+      });
       const offChat = source.on("chat", (payload) => {
         const chat = payload as ChatPayload;
         addItem({
@@ -87,6 +95,8 @@ export function TransferRoom({ roomId }: Props) {
       return () => {
         offMeta();
         offResponse();
+        offResumeQuery();
+        offResumeState();
         offChat();
         offBinary();
       };
@@ -105,6 +115,8 @@ export function TransferRoom({ roomId }: Props) {
     signaling.relay,
     transfer.handleChunk,
     transfer.handleIncomingMeta,
+    transfer.handleResumeQuery,
+    transfer.handleResumeState,
     transfer.handleTransferResponse,
   ]);
 

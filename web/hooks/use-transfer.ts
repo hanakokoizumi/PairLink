@@ -227,6 +227,40 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
     [rejectFile, signaling],
   );
 
+  const handleResumeQuery = useCallback(
+    async (transferId: string) => {
+      const record = await getResumeRecord(transferId);
+      const item = useTransferStore.getState().items.find((i) => i.id === transferId);
+      const receivedBytes =
+        record?.receivedBytes ?? (item?.kind === "file" ? item.receivedBytes : 0);
+      transportSend(signaling, "file-resume-state", { id: transferId, receivedBytes });
+    },
+    [signaling],
+  );
+
+  const handleResumeState = useCallback(
+    async (payload: { id: string; receivedBytes: number }) => {
+      const item = useTransferStore.getState().items.find((i) => i.id === payload.id);
+      if (!item || item.kind !== "file" || !item.file) return;
+      const transport = getTransport(signaling);
+      if (!transport) return;
+
+      let offset = payload.receivedBytes;
+      updateItem(payload.id, { status: "transferring" });
+      while (offset < item.size) {
+        const slice = item.file.slice(offset, offset + CHUNK_SIZE);
+        const buffer = await slice.arrayBuffer();
+        transport.sendBinary(payload.id, offset, buffer);
+        offset += buffer.byteLength;
+        updateProgress(payload.id, offset, item.size);
+      }
+      transport.send("file-complete", { id: payload.id });
+      updateItem(payload.id, { status: "done", progress: 100 });
+      addActivity(`Resumed ${item.name}`);
+    },
+    [addActivity, signaling, updateItem, updateProgress],
+  );
+
   const handleChunk = useCallback(
     async (transferId: string, offset: number, payload: ArrayBuffer) => {
       const item = useTransferStore.getState().items.find((i) => i.id === transferId);
@@ -274,6 +308,8 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
     onAcceptFile,
     onRejectFile,
     handleChunk,
+    handleResumeQuery,
+    handleResumeState,
     handleTransferResponse,
   };
 }
