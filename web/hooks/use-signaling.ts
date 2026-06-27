@@ -147,6 +147,11 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
           setState((s) => ({ ...s, connected: false }));
         });
 
+        signaling.on("ws-open", () => {
+          setWsConnected(true);
+          setState((s) => ({ ...s, connected: true }));
+        });
+
         signaling.on("peer-joined", (payload) => {
           const { peerId: remoteId } = payload as { peerId: string };
           remotePeerIdRef.current = remoteId;

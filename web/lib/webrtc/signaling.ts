@@ -66,6 +66,7 @@ export class SignalingClient {
         if (this.joinPayload) {
           this.sendRaw(this.joinPayload);
         }
+        this.dispatch("ws-open", undefined);
         resolve();
       };
 
