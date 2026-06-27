@@ -48,7 +48,7 @@ func (h *LookupHandler) Lookup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if found.PeerCount() >= 2 {
+	if h.rooms.IsRoomFull(found.ID) {
 		writeError(w, http.StatusConflict, "room_full")
 		return
 	}

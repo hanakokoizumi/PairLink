@@ -1,6 +1,9 @@
 package room
 
-import "time"
+import (
+	"sync"
+	"time"
+)
 
 // PeerRole identifies host or guest in a room.
 type PeerRole string
@@ -19,6 +22,7 @@ type Room struct {
 	CreatedAt  time.Time
 	ExpiresAt  time.Time
 	Peers      map[string]*Peer
+	mu         sync.RWMutex
 }
 
 // Peer represents a connected participant.
@@ -31,6 +35,8 @@ type Peer struct {
 
 // PeerCount returns the number of peers in the room.
 func (r *Room) PeerCount() int {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 	return len(r.Peers)
 }
 
@@ -41,6 +47,8 @@ func (r *Room) IsExpired(now time.Time) bool {
 
 // FindPeerByConnID returns a peer by WebSocket connection ID.
 func (r *Room) FindPeerByConnID(connID string) (*Peer, bool) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 	for _, p := range r.Peers {
 		if p.ConnID == connID {
 			return p, true
@@ -51,6 +59,8 @@ func (r *Room) FindPeerByConnID(connID string) (*Peer, bool) {
 
 // HasConnectedHost reports whether another connection already hosts the room.
 func (r *Room) HasConnectedHost(excludeConnID string) bool {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 	for _, p := range r.Peers {
 		if p.Role == RoleHost && p.ConnID != excludeConnID {
 			return true
@@ -61,6 +71,8 @@ func (r *Room) HasConnectedHost(excludeConnID string) bool {
 
 // OtherPeer returns the peer that is not the given peer ID.
 func (r *Room) OtherPeer(peerID string) (*Peer, bool) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 	for id, p := range r.Peers {
 		if id != peerID {
 			return p, true

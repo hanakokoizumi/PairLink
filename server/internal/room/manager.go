@@ -29,6 +29,7 @@ type Manager struct {
 	codeLength int
 	now        func() time.Time
 	stopCh     chan struct{}
+	onExpired  func(roomID string)
 }
 
 // NewManager creates a room manager with the given TTL and join code length.
@@ -66,15 +67,32 @@ func (m *Manager) cleanupLoop() {
 	}
 }
 
-// CleanupExpired removes expired rooms.
-func (m *Manager) CleanupExpired() {
-	now := m.now()
+// SetExpireHandler registers a callback invoked when a room TTL expires.
+func (m *Manager) SetExpireHandler(fn func(roomID string)) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+	m.onExpired = fn
+}
+
+// CleanupExpired removes expired rooms and notifies the expire handler.
+func (m *Manager) CleanupExpired() {
+	now := m.now()
+	var expired []string
+
+	m.mu.Lock()
 	for id, r := range m.rooms {
 		if r.IsExpired(now) {
+			expired = append(expired, id)
 			delete(m.rooms, id)
 			delete(m.codeToID, r.Code)
+		}
+	}
+	onExpired := m.onExpired
+	m.mu.Unlock()
+
+	for _, id := range expired {
+		if onExpired != nil {
+			onExpired(id)
 		}
 	}
 }
@@ -167,6 +185,8 @@ func (m *Manager) AddPeer(roomID string, peer *Peer) error {
 	if err != nil {
 		return err
 	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	if len(r.Peers) >= maxPeers {
 		return ErrRoomFull
 	}
@@ -194,12 +214,17 @@ func (m *Manager) RemovePeer(connID string) (*Room, *Peer, bool) {
 	defer m.mu.Unlock()
 
 	for _, r := range m.rooms {
+		r.mu.Lock()
 		for id, p := range r.Peers {
 			if p.ConnID == connID {
 				delete(r.Peers, id)
-				return r, p, true
+				peer := p
+				room := r
+				r.mu.Unlock()
+				return room, peer, true
 			}
 		}
+		r.mu.Unlock()
 	}
 	return nil, nil, false
 }
@@ -235,9 +260,23 @@ func (m *Manager) ListPeers(roomID string) []*Peer {
 		return nil
 	}
 	out := make([]*Peer, 0, len(r.Peers))
+	r.mu.RLock()
 	for _, p := range r.Peers {
 		peer := *p
 		out = append(out, &peer)
 	}
+	r.mu.RUnlock()
 	return out
+}
+
+// IsRoomFull reports whether the room already has the maximum number of peers.
+func (m *Manager) IsRoomFull(roomID string) bool {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	r, err := m.getRoomLocked(roomID)
+	if err != nil {
+		return true
+	}
+	return r.PeerCount() >= maxPeers
 }
