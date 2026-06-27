@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import { generateTransferId } from "@/lib/webrtc/datachannel";
@@ -53,6 +53,30 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
   const acceptFile = useTransferStore((s) => s.acceptFile);
   const rejectFile = useTransferStore((s) => s.rejectFile);
   const addActivity = useTransferStore((s) => s.addActivity);
+  const transferWaiters = useRef(
+    new Map<string, (accepted: boolean) => void>(),
+  );
+
+  const waitForTransferResponse = useCallback((transferId: string) => {
+    return new Promise<boolean>((resolve) => {
+      const timer = setTimeout(() => {
+        transferWaiters.current.delete(transferId);
+        resolve(false);
+      }, 30_000);
+      transferWaiters.current.set(transferId, (accepted) => {
+        clearTimeout(timer);
+        transferWaiters.current.delete(transferId);
+        resolve(accepted);
+      });
+    });
+  }, []);
+
+  const handleTransferResponse = useCallback(
+    (payload: { id: string; accepted: boolean }) => {
+      transferWaiters.current.get(payload.id)?.(payload.accepted);
+    },
+    [],
+  );
 
   const sendMessage = useCallback(
     (text: string, masked = false) => {
@@ -119,6 +143,13 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
         };
         transport.send("file-meta", meta);
 
+        const accepted = await waitForTransferResponse(id);
+        if (!accepted) {
+          updateItem(id, { status: "rejected" });
+          addActivity(`Transfer declined: ${file.name}`, "warn");
+          continue;
+        }
+
         let offset = 0;
         while (offset < file.size) {
           const slice = file.slice(offset, offset + CHUNK_SIZE);
@@ -132,7 +163,7 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
         addActivity(`Sent ${file.name}`);
       }
     },
-    [addActivity, addItem, settings, signaling, t, updateItem, updateProgress],
+    [addActivity, addItem, settings, signaling, t, updateItem, updateProgress, waitForTransferResponse],
   );
 
   const downloadFile = useCallback((id: string) => {
@@ -243,6 +274,7 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
     onAcceptFile,
     onRejectFile,
     handleChunk,
+    handleTransferResponse,
   };
 }
 
