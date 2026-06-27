@@ -208,10 +208,6 @@ func (h *Handler) handleHostJoin(c *Client, payload any) error {
 
 	h.leaveOtherRoom(c, r.ID)
 
-	if r.HasConnectedHost(c.ConnID()) {
-		return room.ErrRoomFull
-	}
-
 	peerID := uuid.NewString()
 	peer := &room.Peer{
 		ID:       peerID,
@@ -276,6 +272,9 @@ func (h *Handler) handleJoinRoom(c *Client, payload any) error {
 
 	var r *room.Room
 	if p.RoomID != "" {
+		if !h.joinLimiter.allow(c.ClientIP()) {
+			return errors.New("rate limited")
+		}
 		r, err = h.rooms.FindByID(p.RoomID)
 	} else if p.Code != "" {
 		if !h.joinLimiter.allow(c.ClientIP()) {
