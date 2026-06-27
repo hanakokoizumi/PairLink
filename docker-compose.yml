@@ -1,6 +1,6 @@
 services:
   pairlink:
-    image: ghcr.io/${GHCR_OWNER:-local}/pairlink:${PAIRLINK_TAG:-latest}
+    image: ghcr.io/${GHCR_OWNER:-hanakokoizumi}/pairlink:${PAIRLINK_TAG:-latest}
     build:
       context: .
       dockerfile: Dockerfile
