@@ -149,7 +149,10 @@ func (c *Client) ReadPump(ctx context.Context) {
 // WritePump writes queued messages and sends pings.
 func (c *Client) WritePump(ctx context.Context) {
 	ticker := time.NewTicker(pingInterval)
-	defer ticker.Stop()
+	defer func() {
+		ticker.Stop()
+		c.conn.Close(websocket.StatusNormalClosure, "write pump stopped")
+	}()
 
 	for {
 		select {
