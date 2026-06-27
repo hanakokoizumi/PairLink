@@ -5,6 +5,31 @@ import { useAuthStore } from "@/lib/stores/auth-store";
 
 export type RoomRole = "host" | "guest";
 
+const SESSION_KEY = "pairlink-session";
+
+type PersistedSession = {
+  roomId: string;
+  role: RoomRole;
+  code?: string;
+};
+
+function persistSession(session: PersistedSession) {
+  if (typeof window === "undefined") return;
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
+}
+
+export function loadPersistedSession(roomId: string): PersistedSession | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    const session = JSON.parse(raw) as PersistedSession;
+    return session.roomId === roomId ? session : null;
+  } catch {
+    return null;
+  }
+}
+
 type RoomState = {
   roomId: string | null;
   code: string | null;
@@ -49,6 +74,7 @@ export const useRoomStore = create<RoomState>((set) => ({
       url: locale ? localizeShareUrl(room.url, locale) : room.url,
       role: "host",
     });
+    persistSession({ roomId: room.roomId, role: "host", code: room.code });
   },
   joinByCode: async (code) => {
     const result = await lookupRoom(code);
@@ -58,14 +84,27 @@ export const useRoomStore = create<RoomState>((set) => ({
       expiresAt: result.expiresAt,
       role: "guest",
     });
+    persistSession({ roomId: result.roomId, role: "guest", code });
     return result.roomId;
   },
-  setRoom: (data) => set(data),
+  setRoom: (data) => {
+    set(data);
+    if (data.roomId && data.role) {
+      persistSession({
+        roomId: data.roomId,
+        role: data.role,
+        code: data.code,
+      });
+    }
+  },
   setPeerId: (peerId) => set({ peerId }),
   setRole: (role) => set({ role }),
   setWsConnected: (wsConnected) => set({ wsConnected }),
   setPeerOnline: (peerOnline) => set({ peerOnline }),
-  reset: () =>
+  reset: () => {
+    if (typeof window !== "undefined") {
+      sessionStorage.removeItem(SESSION_KEY);
+    }
     set({
       roomId: null,
       code: null,
@@ -75,5 +114,6 @@ export const useRoomStore = create<RoomState>((set) => ({
       url: null,
       wsConnected: false,
       peerOnline: false,
-    }),
+    });
+  },
 }));
