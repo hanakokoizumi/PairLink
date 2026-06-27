@@ -142,6 +142,14 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
           }
         });
 
+        signaling.on("error", (payload) => {
+          const code =
+            payload && typeof payload === "object" && "code" in payload
+              ? String((payload as { code: string }).code)
+              : "join_failed";
+          addActivity(`Connection error: ${code}`, "error");
+        });
+
         signaling.on("ws-close", () => {
           setWsConnected(false);
           setState((s) => ({ ...s, connected: false }));
