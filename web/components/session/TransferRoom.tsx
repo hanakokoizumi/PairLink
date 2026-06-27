@@ -12,7 +12,7 @@ import { ActivityLog } from "@/components/session/ActivityLog";
 import { useSignaling } from "@/hooks/use-signaling";
 import { useTransfer } from "@/hooks/use-transfer";
 import { useThemeEffect } from "@/hooks/use-theme-effect";
-import { useRoomStore } from "@/lib/stores/room-store";
+import { useRoomStore, loadPersistedSession } from "@/lib/stores/room-store";
 import { useTransferStore } from "@/lib/stores/transfer-store";
 import { parseBinaryChunk } from "@/lib/webrtc/datachannel";
 import type { ChatPayload, FileMetaPayload } from "@/lib/webrtc/file-transfer";
@@ -25,8 +25,16 @@ type Props = {
 export function TransferRoom({ roomId }: Props) {
   const t = useTranslations("session");
   const searchParams = useSearchParams();
-  const code = useRoomStore((s) => s.code) ?? searchParams.get("code") ?? undefined;
-  const role = useRoomStore((s) => s.role) ?? (code ? "guest" : "host");
+  const persisted = loadPersistedSession(roomId);
+  const code =
+    useRoomStore((s) => s.code) ??
+    searchParams.get("code") ??
+    persisted?.code ??
+    undefined;
+  const role =
+    useRoomStore((s) => s.role) ??
+    persisted?.role ??
+    (code ? "guest" : "host");
   const revealMessage = useTransferStore((s) => s.revealMessage);
   const addItem = useTransferStore((s) => s.addItem);
 
@@ -51,6 +59,11 @@ export function TransferRoom({ roomId }: Props) {
       const offMeta = source.on("file-meta", (payload) => {
         transfer.handleIncomingMeta(payload as FileMetaPayload);
       });
+      const offResponse = source.on("files-transfer-response", (payload) => {
+        transfer.handleTransferResponse(
+          payload as { id: string; accepted: boolean },
+        );
+      });
       const offChat = source.on("chat", (payload) => {
         const chat = payload as ChatPayload;
         addItem({
@@ -73,6 +86,7 @@ export function TransferRoom({ roomId }: Props) {
 
       return () => {
         offMeta();
+        offResponse();
         offChat();
         offBinary();
       };
@@ -85,7 +99,14 @@ export function TransferRoom({ roomId }: Props) {
       cleanupDc();
       cleanupRelay();
     };
-  }, [addItem, signaling.dataChannel, signaling.relay, transfer]);
+  }, [
+    addItem,
+    signaling.dataChannel,
+    signaling.relay,
+    transfer.handleChunk,
+    transfer.handleIncomingMeta,
+    transfer.handleTransferResponse,
+  ]);
 
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {
