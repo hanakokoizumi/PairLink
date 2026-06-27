@@ -10,12 +10,14 @@ import (
 
 // AuthHandlers serves authentication endpoints.
 type AuthHandlers struct {
-	auth *auth.Service
+	auth          *auth.Service
+	publicURL     string
+	jwtMaxAge     time.Duration
 }
 
 // NewAuthHandlers creates auth HTTP handlers.
-func NewAuthHandlers(authSvc *auth.Service) *AuthHandlers {
-	return &AuthHandlers{auth: authSvc}
+func NewAuthHandlers(authSvc *auth.Service, publicURL string, jwtMaxAge time.Duration) *AuthHandlers {
+	return &AuthHandlers{auth: authSvc, publicURL: publicURL, jwtMaxAge: jwtMaxAge}
 }
 
 type loginRequest struct {
@@ -52,14 +54,7 @@ func (h *AuthHandlers) Login(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnauthorized, "invalid_credentials")
 		return
 	}
-	http.SetCookie(w, &http.Cookie{
-		Name:     auth.TokenCookieName(),
-		Value:    token,
-		Path:     "/",
-		HttpOnly: true,
-		SameSite: http.SameSiteLaxMode,
-		MaxAge:   int((24 * time.Hour).Seconds()),
-	})
+	auth.SetTokenCookie(w, h.publicURL, token, h.jwtMaxAge)
 	writeJSON(w, http.StatusOK, loginResponse{Token: token})
 }
 

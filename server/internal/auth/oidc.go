@@ -22,6 +22,7 @@ type OIDCProvider struct {
 	verifier     *oidc.IDTokenVerifier
 	policy       *OIDCPolicy
 	jwt          *JWTManager
+	jwtMaxAge    time.Duration
 	publicURL    string
 
 	mu     sync.Mutex
@@ -43,6 +44,7 @@ type OIDCConfig struct {
 	PublicURL    string
 	Policy       *OIDCPolicy
 	JWT          *JWTManager
+	JWTMaxAge    time.Duration
 }
 
 // NewOIDCProvider initializes OIDC when enabled and configured.
@@ -52,6 +54,7 @@ func NewOIDCProvider(ctx context.Context, cfg OIDCConfig) (*OIDCProvider, error)
 		redirectURL: cfg.RedirectURL,
 		policy:    cfg.Policy,
 		jwt:       cfg.JWT,
+		jwtMaxAge: cfg.JWTMaxAge,
 		publicURL: cfg.PublicURL,
 		states:    make(map[string]oidcState),
 	}
@@ -191,14 +194,7 @@ func (p *OIDCProvider) CallbackHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.SetCookie(w, &http.Cookie{
-		Name:     TokenCookieName(),
-		Value:    token,
-		Path:     "/",
-		HttpOnly: true,
-		SameSite: http.SameSiteLaxMode,
-		MaxAge:   int((24 * time.Hour).Seconds()),
-	})
+	SetTokenCookie(w, p.publicURL, token, p.jwtMaxAge)
 	http.Redirect(w, r, p.publicURL+"/?logged_in=1", http.StatusFound)
 }
 

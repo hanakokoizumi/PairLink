@@ -31,7 +31,7 @@ func testAuthService(t *testing.T, disableAuth bool, users string) *auth.Service
 
 func TestAuthHandlers_loginSuccess(t *testing.T) {
 	svc := testAuthService(t, false, "")
-	h := NewAuthHandlers(svc)
+	h := NewAuthHandlers(svc, "http://localhost:8080", time.Hour)
 
 	body := `{"username":"admin","password":"secret"}`
 	req := httptest.NewRequest(http.MethodPost, "/api/auth/login", strings.NewReader(body))
@@ -44,7 +44,7 @@ func TestAuthHandlers_loginSuccess(t *testing.T) {
 
 func TestAuthHandlers_loginFailure(t *testing.T) {
 	svc := testAuthService(t, false, "")
-	h := NewAuthHandlers(svc)
+	h := NewAuthHandlers(svc, "http://localhost:8080", time.Hour)
 
 	body := `{"username":"admin","password":"wrong"}`
 	req := httptest.NewRequest(http.MethodPost, "/api/auth/login", strings.NewReader(body))

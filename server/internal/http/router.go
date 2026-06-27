@@ -44,8 +44,13 @@ func NewRouter(deps Deps) http.Handler {
 		r.Use(httprate.LimitByIP(deps.Config.RateLimitPerIP, time.Minute))
 	}
 
+	jwtTTL, err := deps.Config.JWTExpireDuration()
+	if err != nil {
+		jwtTTL = 24 * time.Hour
+	}
+
 	configHandler := NewConfigHandler(deps.Config)
-	authHandlers := NewAuthHandlers(deps.Auth)
+	authHandlers := NewAuthHandlers(deps.Auth, deps.Config.PublicURL, jwtTTL)
 	roomHandlers := NewRoomHandlers(deps.Config, deps.Auth, deps.Rooms)
 	lookupHandler := NewLookupHandler(deps.Rooms)
 

@@ -72,6 +72,7 @@ func run() error {
 		PublicURL:    cfg.PublicURL,
 		Policy:       policy,
 		JWT:          jwtMgr,
+		JWTMaxAge:    jwtTTL,
 	})
 	if err != nil {
 		return fmt.Errorf("oidc: %w", err)
