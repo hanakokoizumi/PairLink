@@ -62,10 +62,14 @@ export async function encryptChunk(
       ? plaintext
       : new Uint8Array(plaintext);
   const iv = crypto.getRandomValues(new Uint8Array(12));
+  const data = bytes.buffer.slice(
+    bytes.byteOffset,
+    bytes.byteOffset + bytes.byteLength,
+  ) as ArrayBuffer;
   const ciphertext = await crypto.subtle.encrypt(
     { name: "AES-GCM", iv },
     key,
-    bytes.buffer as ArrayBuffer,
+    data,
   );
   return {
     iv: bufToBase64(iv.buffer),
