@@ -358,6 +358,12 @@ func (h *Handler) handleJoinRoom(c *Client, payload any) error {
 }
 
 func (h *Handler) forwardEnvelope(c *Client, env Envelope) error {
+	if env.Type == "chat" {
+		if err := validateChatPayload(env.Payload, h.cfg.MessageMaxLength); err != nil {
+			return err
+		}
+	}
+
 	r, peer, ok := h.rooms.GetRoomByConnID(c.ConnID())
 	if !ok {
 		return errors.New("not in room")
@@ -392,6 +398,36 @@ func (h *Handler) forwardEnvelope(c *Client, env Envelope) error {
 		return fmt.Errorf("peer offline")
 	}
 	return nil
+}
+
+func validateChatPayload(payload any, maxLen int) error {
+	if maxLen <= 0 {
+		return nil
+	}
+	m, err := payloadAsMap(payload)
+	if err != nil {
+		return err
+	}
+	text, _ := m["text"].(string)
+	if len(text) > maxLen {
+		return fmt.Errorf("message too long")
+	}
+	return nil
+}
+
+func payloadAsMap(payload any) (map[string]any, error) {
+	if m, ok := payload.(map[string]any); ok {
+		return m, nil
+	}
+	raw, err := json.Marshal(payload)
+	if err != nil {
+		return nil, err
+	}
+	var m map[string]any
+	if err := json.Unmarshal(raw, &m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 func (h *Handler) handleRelayChunk(c *Client, payload any) error {
