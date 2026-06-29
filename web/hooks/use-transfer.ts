@@ -56,6 +56,7 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
   const transferWaiters = useRef(
     new Map<string, (accepted: boolean) => void>(),
   );
+  const chunkChains = useRef(new Map<string, Promise<void>>());
 
   const waitForTransferResponse = useCallback((transferId: string) => {
     return new Promise<boolean>((resolve) => {
@@ -265,8 +266,10 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
     async (transferId: string) => {
       const record = await getResumeRecord(transferId);
       const item = useTransferStore.getState().items.find((i) => i.id === transferId);
-      const receivedBytes =
+      const raw =
         record?.receivedBytes ?? (item?.kind === "file" ? item.receivedBytes : 0);
+      const maxSize = item?.kind === "file" ? item.size : 0;
+      const receivedBytes = Math.max(0, Math.min(raw, maxSize));
       transportSend(signaling, "file-resume-state", { id: transferId, receivedBytes });
     },
     [signaling],
@@ -279,7 +282,7 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
       const transport = getTransport(signaling);
       if (!transport) return;
 
-      let offset = payload.receivedBytes;
+      let offset = Math.max(0, Math.min(payload.receivedBytes, item.size));
       updateItem(payload.id, { status: "transferring" });
       while (offset < item.size) {
         const slice = item.file.slice(offset, offset + CHUNK_SIZE);
@@ -295,41 +298,64 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
     [addActivity, signaling, updateItem, updateProgress],
   );
 
+  const handleFileComplete = useCallback(
+    async (payload: { id: string }) => {
+      const item = useTransferStore.getState().items.find((i) => i.id === payload.id);
+      if (!item || item.kind !== "file") return;
+      if (item.size !== 0 || item.status === "done") return;
+
+      updateItem(payload.id, {
+        blob: new Blob([], { type: item.mime }),
+        status: "done",
+        progress: 100,
+        receivedBytes: 0,
+      });
+      await deleteResumeRecord(payload.id);
+      addActivity(`Received ${item.name}`);
+    },
+    [addActivity, updateItem],
+  );
+
   const handleChunk = useCallback(
     async (transferId: string, offset: number, payload: ArrayBuffer) => {
-      const item = useTransferStore.getState().items.find((i) => i.id === transferId);
-      if (!item || item.kind !== "file") return;
-      if (item.status === "awaiting_accept" || item.status === "rejected") return;
-      if (offset !== item.receivedBytes) return;
+      const run = async () => {
+        const item = useTransferStore.getState().items.find((i) => i.id === transferId);
+        if (!item || item.kind !== "file") return;
+        if (item.status === "awaiting_accept" || item.status === "rejected") return;
+        if (offset !== item.receivedBytes) return;
 
-      const receivedBytes = offset + payload.byteLength;
-      const existing = await getResumeRecord(transferId);
-      if (existing) {
-        await appendChunk(transferId, payload, receivedBytes);
-      } else {
-        await saveResumeRecord({
-          transferId,
-          roomId,
-          name: item.name,
-          size: item.size,
-          mime: item.mime,
-          receivedBytes,
-          chunks: [payload],
-          direction: "recv",
-          updatedAt: Date.now(),
-        });
-      }
-      updateProgress(transferId, receivedBytes, item.size);
-      if (receivedBytes >= item.size) {
-        const record = await import("@/lib/storage/resume-store").then((m) =>
-          m.getResumeRecord(transferId),
-        );
-        if (record) {
-          const blob = assembleBlob(record);
-          updateItem(transferId, { blob, status: "done" });
-          await deleteResumeRecord(transferId);
+        const receivedBytes = offset + payload.byteLength;
+        const existing = await getResumeRecord(transferId);
+        if (existing) {
+          await appendChunk(transferId, payload, receivedBytes);
+        } else {
+          await saveResumeRecord({
+            transferId,
+            roomId,
+            name: item.name,
+            size: item.size,
+            mime: item.mime,
+            receivedBytes,
+            chunks: [payload],
+            direction: "recv",
+            updatedAt: Date.now(),
+          });
         }
-      }
+        updateProgress(transferId, receivedBytes, item.size);
+        if (receivedBytes >= item.size) {
+          const record = await getResumeRecord(transferId);
+          if (record) {
+            const blob = assembleBlob(record);
+            updateItem(transferId, { blob, status: "done", progress: 100 });
+            await deleteResumeRecord(transferId);
+          }
+        }
+      };
+
+      const prev = chunkChains.current.get(transferId) ?? Promise.resolve();
+      const next = prev.then(run);
+      chunkChains.current.set(transferId, next);
+      await next;
     },
     [roomId, updateItem, updateProgress],
   );
@@ -347,6 +373,7 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
     handleResumeQuery,
     handleResumeState,
     handleTransferResponse,
+    handleFileComplete,
   };
 }
 

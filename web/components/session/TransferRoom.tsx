@@ -103,6 +103,9 @@ function TransferSession({
       const offChat = source.on("chat", (payload) => {
         transfer.handleIncomingChat(payload as ChatPayload);
       });
+      const offComplete = source.on("file-complete", (payload) => {
+        void transfer.handleFileComplete(payload as { id: string });
+      });
       const offBinary = source.onBinary((data) => {
         const parsed = parseBinaryChunk(data);
         if (parsed) {
@@ -116,6 +119,7 @@ function TransferSession({
         offResumeQuery();
         offResumeState();
         offChat();
+        offComplete();
         offBinary();
       };
     };
@@ -133,11 +137,13 @@ function TransferSession({
     signaling.dataChannel,
     signaling.relay,
     transfer.handleChunk,
+    transfer.handleFileComplete,
     transfer.handleIncomingChat,
     transfer.handleIncomingMeta,
     transfer.handleResumeQuery,
     transfer.handleResumeState,
     transfer.handleTransferResponse,
+    transfer,
   ]);
 
   useEffect(() => {
