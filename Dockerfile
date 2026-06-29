@@ -30,6 +30,8 @@ COPY --from=web /app/web/.next/static ./web/.next/static
 COPY --from=web /app/web/public ./web/public
 COPY deploy/docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
+RUN chown -R node:node /app
+USER node
 EXPOSE 8080
 ENV PAIRLINK_LOAD_DOTENV=false
 ENV PAIRLINK_API_PORT=8081
