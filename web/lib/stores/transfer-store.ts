@@ -80,7 +80,7 @@ export const useTransferStore = create<TransferState>((set, get) => ({
     get().updateItem(id, {
       receivedBytes,
       progress,
-      status: progress >= 100 ? "done" : "transferring",
+      status: "transferring",
     } as Partial<TransferItem>);
   },
   acceptFile: (id) =>
