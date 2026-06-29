@@ -58,6 +58,7 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
 
   const switchToRelay = useCallback(() => {
     if (!config?.wsFallback || !signalingRef.current) return;
+    if (!remotePeerIdRef.current) return;
     setConnectionMode("relay");
     addActivity("Switching to relay mode", "warn");
     peerRef.current?.close();
@@ -104,6 +105,7 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
       iceMonitorRef.current = new IceFallbackMonitor({
         timeoutMs: (config.settings.iceTimeoutSec ?? 15) * 1000,
         onFailed: switchToRelay,
+        onDisconnected: switchToRelay,
       });
 
       return peer;
@@ -185,6 +187,8 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
         });
 
         signaling.on("peer-left", () => {
+          iceMonitorRef.current?.dispose();
+          iceMonitorRef.current = null;
           setPeerOnline(false);
           peerRef.current?.close();
           peerRef.current = null;
@@ -211,46 +215,54 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
         });
 
         signaling.on("signal", async (payload) => {
-          const sig = payload as {
-            from?: string;
-            sdp?: RTCSessionDescriptionInit;
-            candidate?: RTCIceCandidateInit;
-          };
-          if (sig.from) remotePeerIdRef.current = sig.from;
-          const peer = peerRef.current;
-          if (!peer) return;
-          if (sig.sdp) {
-            if (sig.sdp.type === "offer") {
-              const answer = await peer.handleOffer(sig.sdp);
-              signaling.signal({ to: sig.from, sdp: answer });
-            } else {
-              await peer.handleAnswer(sig.sdp);
+          try {
+            const sig = payload as {
+              from?: string;
+              sdp?: RTCSessionDescriptionInit;
+              candidate?: RTCIceCandidateInit;
+            };
+            if (sig.from) remotePeerIdRef.current = sig.from;
+            const peer = peerRef.current;
+            if (!peer) return;
+            if (sig.sdp) {
+              if (sig.sdp.type === "offer") {
+                const answer = await peer.handleOffer(sig.sdp);
+                signaling.signal({ to: sig.from, sdp: answer });
+              } else {
+                await peer.handleAnswer(sig.sdp);
+              }
             }
-          }
-          if (sig.candidate) {
-            await peer.addIceCandidate(sig.candidate);
+            if (sig.candidate) {
+              await peer.addIceCandidate(sig.candidate);
+            }
+          } catch {
+            addActivity("Signaling error", "error");
           }
         });
 
         signaling.on("e2e-handshake", async (payload) => {
-          const { publicKey, from } = payload as { publicKey: string; from?: string };
-          if (from) remotePeerIdRef.current = from;
-          if (!keyPairRef.current || !publicKey) return;
-          const peerKey = await importPublicKey(parsePublicKey(publicKey));
-          sessionKeyRef.current = await deriveSessionKey(
-            keyPairRef.current.privateKey,
-            peerKey,
-          );
-          relayRef.current?.setSessionKey(sessionKeyRef.current);
-          if (remotePeerIdRef.current) {
-            relayRef.current?.setPeerId(remotePeerIdRef.current);
-          }
-          if (from && keyPairRef.current && !handshakeSentRef.current) {
-            signaling.e2eHandshake(
-              from,
-              serializePublicKey(keyPairRef.current.publicKeyJwk),
+          try {
+            const { publicKey, from } = payload as { publicKey: string; from?: string };
+            if (from) remotePeerIdRef.current = from;
+            if (!keyPairRef.current || !publicKey) return;
+            const peerKey = await importPublicKey(parsePublicKey(publicKey));
+            sessionKeyRef.current = await deriveSessionKey(
+              keyPairRef.current.privateKey,
+              peerKey,
             );
-            handshakeSentRef.current = true;
+            relayRef.current?.setSessionKey(sessionKeyRef.current);
+            if (remotePeerIdRef.current) {
+              relayRef.current?.setPeerId(remotePeerIdRef.current);
+            }
+            if (from && keyPairRef.current && !handshakeSentRef.current) {
+              signaling.e2eHandshake(
+                from,
+                serializePublicKey(keyPairRef.current.publicKeyJwk),
+              );
+              handshakeSentRef.current = true;
+            }
+          } catch {
+            addActivity("Encryption handshake failed", "error");
           }
         });
 
