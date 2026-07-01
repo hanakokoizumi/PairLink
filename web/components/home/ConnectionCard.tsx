@@ -1,5 +1,6 @@
 "use client";
 
+import { useSyncExternalStore } from "react";
 import { useTranslations } from "next-intl";
 import { QRCodeSVG } from "qrcode.react";
 import { Copy } from "lucide-react";
@@ -23,6 +24,24 @@ type Props = {
   onContinue?: () => void;
 };
 
+function useMinutesLeft(expiresAt: string | null) {
+  return useSyncExternalStore(
+    (onStoreChange) => {
+      if (!expiresAt) return () => undefined;
+      const id = window.setInterval(onStoreChange, 60_000);
+      return () => window.clearInterval(id);
+    },
+    () => {
+      if (!expiresAt) return null;
+      return Math.max(
+        0,
+        Math.round((new Date(expiresAt).getTime() - Date.now()) / 60000),
+      );
+    },
+    () => null,
+  );
+}
+
 export function ConnectionCard({
   open,
   onOpenChange,
@@ -32,18 +51,14 @@ export function ConnectionCard({
   onContinue,
 }: Props) {
   const t = useTranslations();
+  const minutesLeft = useMinutesLeft(expiresAt);
 
   const copy = async (value: string) => {
     await navigator.clipboard.writeText(value);
     toast.success(t("common.copied"));
   };
 
-  const minutesLeft = expiresAt
-    ? Math.max(
-        0,
-        Math.round((new Date(expiresAt).getTime() - Date.now()) / 60000),
-      )
-    : null;
+  const minutesLeftDisplay = minutesLeft;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -57,9 +72,9 @@ export function ConnectionCard({
             <p className="font-mono text-4xl font-bold tracking-[0.4em] text-primary">
               {code}
             </p>
-            {minutesLeft !== null && (
+            {minutesLeftDisplay !== null && (
               <p className="mt-2 text-xs text-muted-foreground">
-                {t("connection.expiresIn", { minutes: minutesLeft })}
+                {t("connection.expiresIn", { minutes: minutesLeftDisplay })}
               </p>
             )}
           </div>
