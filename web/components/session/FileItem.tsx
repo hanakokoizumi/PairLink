@@ -82,7 +82,8 @@ export function FileItem({
             {t("download")}
           </Button>
         )}
-        {(item.status === "interrupted" || item.status === "resuming") && (
+        {(item.status === "interrupted" || item.status === "resuming") &&
+          item.direction === "send" && (
           <Button size="sm" variant="outline" onClick={() => onResume?.(item.id)}>
             <Play className="mr-1 h-3 w-3" />
             {t("resume")}
