@@ -3,17 +3,6 @@ import { fetchMe, login as apiLogin } from "@/lib/api";
 
 const TOKEN_KEY = "pairlink:token";
 
-function readToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return sessionStorage.getItem(TOKEN_KEY);
-}
-
-function writeToken(token: string | null) {
-  if (typeof window === "undefined") return;
-  if (token) sessionStorage.setItem(TOKEN_KEY, token);
-  else sessionStorage.removeItem(TOKEN_KEY);
-}
-
 type User = {
   sub: string;
   username: string;

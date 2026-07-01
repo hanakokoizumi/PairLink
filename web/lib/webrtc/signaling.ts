@@ -22,7 +22,7 @@ type Handler = (payload: unknown) => void;
 
 const RECONNECT_DELAYS = [1000, 2000, 4000, 8000, 16000];
 
-function wsUrl(token?: string): string {
+function wsUrl(): string {
   const base = process.env.NEXT_PUBLIC_API_URL;
   if (base) {
     const url = new URL(base);
@@ -55,7 +55,7 @@ export class SignalingClient {
   connect(): Promise<void> {
     return new Promise((resolve, reject) => {
       this.shouldReconnect = true;
-      const socket = new WebSocket(wsUrl(this.token));
+      const socket = new WebSocket(wsUrl());
       this.ws = socket;
 
       socket.onopen = () => {
