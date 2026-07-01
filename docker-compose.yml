@@ -19,11 +19,9 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
-    depends_on:
-      coturn:
-        condition: service_started
 
   coturn:
+    profiles: ["turn"]
     image: coturn/coturn:4.6.2
     network_mode: host
     volumes:
