@@ -46,7 +46,7 @@ export function JoinPanel() {
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (code.length !== codeLength) {
-      toast.error(t("errors.invalidCode"));
+      toast.error(t("errors.invalidCode", { length: codeLength }));
       return;
     }
     setLoading(true);

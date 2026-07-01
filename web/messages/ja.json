@@ -79,7 +79,7 @@
     "fileTooLarge": "ファイルがサイズ制限を超えています",
     "messageTooLong": "メッセージが長すぎます",
     "rateLimited": "リクエストが多すぎます。後でもう一度お試しください",
-    "invalidCode": "接続コードは 5 桁の数字である必要があります",
+    "invalidCode": "接続コードは {length} 桁の数字である必要があります",
     "peerDisconnected": "相手が切断しました",
     "webrtcUnsupported": "このブラウザは WebRTC に対応していません",
     "resumeUnavailable": "送信を再開するにはファイルを再選択してください"
