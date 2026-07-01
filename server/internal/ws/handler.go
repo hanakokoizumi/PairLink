@@ -131,7 +131,16 @@ func wsErrorCode(err error) string {
 func (h *Handler) leaveOtherRoom(c *Client, targetRoomID string) {
 	if existingRoom, _, ok := h.rooms.GetRoomByConnID(c.ConnID()); ok {
 		if existingRoom.ID != targetRoomID {
-			h.rooms.RemovePeer(c.ConnID())
+			if r, peer, removed := h.rooms.RemovePeer(c.ConnID()); removed {
+				payload, _ := json.Marshal(Envelope{
+					Type: "peer-left",
+					Payload: PeerLeftPayload{
+						PeerID: peer.ID,
+						Role:   string(peer.Role),
+					},
+				})
+				h.hub.BroadcastToRoom(r.ID, payload, c.ConnID())
+			}
 			c.SetPeer("", "", "")
 		}
 	}
@@ -408,8 +417,15 @@ func validateChatPayload(payload any, maxLen int) error {
 	if err != nil {
 		return err
 	}
-	text, _ := m["text"].(string)
-	if len(text) > maxLen {
+	text, ok := m["text"]
+	if !ok {
+		return fmt.Errorf("invalid message text")
+	}
+	textStr, ok := text.(string)
+	if !ok {
+		return fmt.Errorf("invalid message text")
+	}
+	if len(textStr) > maxLen {
 		return fmt.Errorf("message too long")
 	}
 	return nil
