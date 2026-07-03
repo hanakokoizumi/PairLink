@@ -54,6 +54,13 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	client := NewClient(conn, h.hub, int64(h.cfg.WSMaxMessageBytes), h.handleMessage)
 	client.SetIP(clientIP(r))
+	if !h.auth.DisableAuth() {
+		if token := auth.ExtractToken(r); token != "" {
+			if claims, err := h.auth.ValidateToken(token); err == nil {
+				client.SetUserID(claims.Subject)
+			}
+		}
+	}
 	h.hub.Register(client)
 
 	ctx, cancel := context.WithCancel(r.Context())
