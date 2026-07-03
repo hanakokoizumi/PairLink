@@ -46,15 +46,24 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ token: null, user: null });
   },
   fetchMe: async () => {
-    const token = get().token ?? undefined;
+    try {
+      const user = await fetchMe();
+      set({ user });
+      return;
+    } catch {
+      // Fall back to a sessionStorage bearer token when no cookie session exists.
+    }
+    const token = get().token;
+    if (!token) {
+      set({ user: null });
+      return;
+    }
     try {
       const user = await fetchMe(token);
       set({ user });
     } catch {
-      if (token) {
-        sessionStorage.removeItem(TOKEN_KEY);
-        set({ token: null, user: null });
-      }
+      sessionStorage.removeItem(TOKEN_KEY);
+      set({ token: null, user: null });
     }
   },
 }));
