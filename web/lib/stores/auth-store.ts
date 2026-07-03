@@ -28,7 +28,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const token = sessionStorage.getItem(TOKEN_KEY);
     if (token) set({ token });
   },
-  isAuthenticated: () => Boolean(get().token),
+  isAuthenticated: () => Boolean(get().user ?? get().token),
   login: async (username, password) => {
     set({ loading: true });
     try {
@@ -46,13 +46,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ token: null, user: null });
   },
   fetchMe: async () => {
-    const token = get().token;
-    if (!token) return;
+    const token = get().token ?? undefined;
     try {
       const user = await fetchMe(token);
       set({ user });
     } catch {
-      get().logout();
+      if (token) {
+        sessionStorage.removeItem(TOKEN_KEY);
+        set({ token: null, user: null });
+      }
     }
   },
 }));
