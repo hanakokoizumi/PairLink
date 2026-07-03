@@ -28,7 +28,7 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
       return config;
     } catch (err) {
       const message = err instanceof Error ? err.message : "config_error";
-      set({ error: message, loading: false });
+      set({ error: message, loading: false, loaded: true });
       throw err;
     }
   },
