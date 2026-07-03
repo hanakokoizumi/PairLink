@@ -1,0 +1,35 @@
+# Version control
+.git
+.gitignore
+
+# Local / CI (not used during image build)
+.github
+.env
+.env.*
+Makefile
+docker-compose*.yml
+LICENSE
+docs
+*.md
+
+# Web: dependencies and build output (reinstalled/built in image)
+web/node_modules
+web/.next
+web/out
+web/coverage
+web/*.tsbuildinfo
+
+# Web: tests and lint tooling (not needed for next build)
+web/tests
+web/eslint.config.mjs
+web/vitest.config.ts
+web/vitest.setup.ts
+**/*.test.ts
+**/*.test.tsx
+
+# Go: tests and local binaries
+**/*_test.go
+bin
+
+# Optional TURN skeleton (not copied into runtime image)
+deploy/coturn
