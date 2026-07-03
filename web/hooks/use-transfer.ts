@@ -22,8 +22,12 @@ import { useTransferStore } from "@/lib/stores/transfer-store";
 import type { SignalingState } from "@/hooks/use-signaling";
 
 type Transport = {
-  send: (type: string, payload?: unknown) => void;
-  sendBinary: (transferId: string, offset: number, chunk: ArrayBuffer) => void;
+  send: (type: string, payload?: unknown) => void | Promise<void>;
+  sendBinary: (
+    transferId: string,
+    offset: number,
+    chunk: ArrayBuffer,
+  ) => void | Promise<void>;
 };
 
 function getTransport(signaling: SignalingState): Transport | null {
@@ -36,9 +40,9 @@ function getTransport(signaling: SignalingState): Transport | null {
   }
   if (signaling.relay) {
     return {
-      send: (type, payload) => void signaling.relay!.send(type, payload),
+      send: (type, payload) => signaling.relay!.send(type, payload),
       sendBinary: (id, offset, chunk) =>
-        void signaling.relay!.sendBinary(id, offset, chunk),
+        signaling.relay!.sendBinary(id, offset, chunk),
     };
   }
   return null;
@@ -155,7 +159,7 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
         while (offset < file.size) {
           const slice = file.slice(offset, offset + CHUNK_SIZE);
           const buffer = await slice.arrayBuffer();
-          transport.sendBinary(id, offset, buffer);
+          await transport.sendBinary(id, offset, buffer);
           offset += buffer.byteLength;
           updateProgress(id, offset, file.size);
         }
@@ -287,7 +291,7 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
       while (offset < item.size) {
         const slice = item.file.slice(offset, offset + CHUNK_SIZE);
         const buffer = await slice.arrayBuffer();
-        transport.sendBinary(payload.id, offset, buffer);
+        await transport.sendBinary(payload.id, offset, buffer);
         offset += buffer.byteLength;
         updateProgress(payload.id, offset, item.size);
       }
