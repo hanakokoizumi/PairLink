@@ -475,6 +475,8 @@ func (h *Handler) handleRelayChunk(c *Client, payload any) error {
 	if err != nil {
 		return err
 	}
-	h.hub.SendToPeer(other.ID, out)
+	if !h.hub.SendToPeer(other.ID, out) {
+		return fmt.Errorf("peer offline")
+	}
 	return nil
 }
