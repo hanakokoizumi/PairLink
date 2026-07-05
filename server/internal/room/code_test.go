@@ -7,18 +7,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestGenerateCode_range(t *testing.T) {
+func TestGenerateCode_format(t *testing.T) {
 	for i := 0; i < 100; i++ {
 		code, err := GenerateCode(5)
 		require.NoError(t, err)
 		assert.Len(t, code, 5)
 		assert.True(t, ValidateCodeFormat(code, 5))
-		n := 0
-		for _, c := range code {
-			n = n*10 + int(c-'0')
-		}
-		assert.GreaterOrEqual(t, n, 10000)
-		assert.LessOrEqual(t, n, 99999)
 	}
 }
 
@@ -30,7 +24,13 @@ func TestGenerateCode_customLength(t *testing.T) {
 }
 
 func TestValidateCodeFormat(t *testing.T) {
-	assert.True(t, ValidateCodeFormat("48291", 5))
+	assert.True(t, ValidateCodeFormat("4829A", 5))
+	assert.True(t, ValidateCodeFormat("AB12Z", 5))
 	assert.False(t, ValidateCodeFormat("4829", 5))
 	assert.False(t, ValidateCodeFormat("abcde", 5))
+	assert.False(t, ValidateCodeFormat("AB-12", 5))
+}
+
+func TestNormalizeCode(t *testing.T) {
+	assert.Equal(t, "A1B2C", NormalizeCode("a1b2c"))
 }

@@ -80,7 +80,7 @@
     "fileTooLarge": "File exceeds maximum size",
     "messageTooLong": "Message is too long",
     "rateLimited": "Too many requests, please try again later",
-    "invalidCode": "Connection code must be {length} digits",
+    "invalidCode": "Connection code must be {length} letters or digits",
     "peerDisconnected": "Peer disconnected",
     "webrtcUnsupported": "WebRTC is not supported in this browser",
     "resumeUnavailable": "Re-select the file to resume sending"

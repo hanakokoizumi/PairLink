@@ -2,31 +2,35 @@ package room
 
 import (
 	"crypto/rand"
-	"encoding/binary"
-	"math"
-	"strconv"
+	"strings"
 )
 
 const defaultCodeLength = 5
 
-// GenerateCode returns a cryptographically random decimal code with the given length.
+const codeAlphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+// GenerateCode returns a cryptographically random alphanumeric code (0-9, A-Z).
 func GenerateCode(length int) (string, error) {
-	if length <= 0 || length > 9 {
+	if length <= 0 || length > 12 {
 		length = defaultCodeLength
 	}
-	min := int(math.Pow10(length - 1))
-	max := int(math.Pow10(length)) - 1
-	span := uint32(max - min + 1)
-
-	var b [4]byte
-	if _, err := rand.Read(b[:]); err != nil {
+	out := make([]byte, length)
+	randBytes := make([]byte, length)
+	if _, err := rand.Read(randBytes); err != nil {
 		return "", err
 	}
-	n := min + int(binary.BigEndian.Uint32(b[:])%span)
-	return leftPad(strconv.Itoa(n), length), nil
+	for i := range out {
+		out[i] = codeAlphabet[int(randBytes[i])%len(codeAlphabet)]
+	}
+	return string(out), nil
 }
 
-// ValidateCodeFormat checks that code is exactly length decimal digits.
+// NormalizeCode uppercases ASCII letters in a join code for lookup.
+func NormalizeCode(code string) string {
+	return strings.ToUpper(code)
+}
+
+// ValidateCodeFormat checks that code is exactly length alphanumeric characters (A-Z, 0-9).
 func ValidateCodeFormat(code string, length int) bool {
 	if length <= 0 {
 		length = defaultCodeLength
@@ -35,16 +39,9 @@ func ValidateCodeFormat(code string, length int) bool {
 		return false
 	}
 	for _, c := range code {
-		if c < '0' || c > '9' {
+		if (c < '0' || c > '9') && (c < 'A' || c > 'Z') {
 			return false
 		}
 	}
 	return true
-}
-
-func leftPad(value string, length int) string {
-	for len(value) < length {
-		value = "0" + value
-	}
-	return value
 }

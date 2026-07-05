@@ -80,7 +80,7 @@
     "fileTooLarge": "檔案超過大小限制",
     "messageTooLong": "訊息過長",
     "rateLimited": "請求過於頻繁，請稍後再試",
-    "invalidCode": "連線碼必須為 {length} 位數字",
+    "invalidCode": "連線碼必須為 {length} 位字母或數字",
     "peerDisconnected": "對方已斷線",
     "webrtcUnsupported": "此瀏覽器不支援 WebRTC",
     "resumeUnavailable": "請重新選擇檔案以繼續傳送"

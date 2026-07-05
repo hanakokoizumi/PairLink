@@ -29,7 +29,7 @@ func (h *LookupHandler) Lookup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	code := r.URL.Query().Get("code")
+	code := room.NormalizeCode(r.URL.Query().Get("code"))
 	if !room.ValidateCodeFormat(code, h.rooms.CodeLength()) {
 		writeError(w, http.StatusBadRequest, "invalid_code")
 		return

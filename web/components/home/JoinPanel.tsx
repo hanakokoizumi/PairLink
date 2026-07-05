@@ -20,24 +20,27 @@ export function JoinPanel() {
   const router = useRouter();
   const codeLength = useConfigStore((s) => s.config?.settings.roomCodeLength ?? 5);
   const joinByCode = useRoomStore((s) => s.joinByCode);
-  const [digits, setDigits] = useState<string[]>(Array(codeLength).fill(""));
+  const [chars, setChars] = useState<string[]>(Array(codeLength).fill(""));
   const [loading, setLoading] = useState(false);
 
-  const code = useMemo(() => digits.join(""), [digits]);
+  const code = useMemo(() => chars.join(""), [chars]);
 
   const handleChange = (index: number, value: string) => {
-    const digit = value.replace(/\D/g, "").slice(-1);
-    const next = [...digits];
-    next[index] = digit;
-    setDigits(next);
-    if (digit && index < codeLength - 1) {
+    const char = value
+      .replace(/[^A-Za-z0-9]/g, "")
+      .slice(-1)
+      .toUpperCase();
+    const next = [...chars];
+    next[index] = char;
+    setChars(next);
+    if (char && index < codeLength - 1) {
       const el = document.getElementById(`otp-${index + 1}`);
       el?.focus();
     }
   };
 
   const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
-    if (e.key === "Backspace" && !digits[index] && index > 0) {
+    if (e.key === "Backspace" && !chars[index] && index > 0) {
       const el = document.getElementById(`otp-${index - 1}`);
       el?.focus();
     }
@@ -88,17 +91,17 @@ export function JoinPanel() {
           <form onSubmit={handleJoin} className="space-y-4">
             <Label>{t("session.roomCode")}</Label>
             <div className="flex justify-center gap-2">
-              {digits.map((digit, index) => (
+              {chars.map((char, index) => (
                 <Input
                   key={index}
                   id={`otp-${index}`}
-                  inputMode="numeric"
+                  inputMode="text"
                   maxLength={1}
-                  value={digit}
+                  value={char}
                   onChange={(e) => handleChange(index, e.target.value)}
                   onKeyDown={(e) => handleKeyDown(index, e)}
-                  className="h-12 w-10 text-center font-mono text-lg tracking-widest"
-                  aria-label={`Digit ${index + 1}`}
+                  className="h-12 w-10 text-center font-mono text-lg tracking-widest uppercase"
+                  aria-label={`Character ${index + 1}`}
                 />
               ))}
             </div>
