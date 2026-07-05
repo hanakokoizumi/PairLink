@@ -121,19 +121,7 @@ Manual QA: [docs/browser-qa.md](docs/browser-qa.md)
 
 ## Development
 
-**Prerequisites:** Go, Node.js, pnpm, and Docker — use whatever versions are already installed on your system.
-
-<details>
-<summary>Verified reference environment (optional)</summary>
-
-| Tool | Version |
-|------|---------|
-| Go | 1.26.4 |
-| Node.js | 22.x |
-| pnpm | via Corepack |
-| Docker Compose | v2+ |
-
-</details>
+See [DEVELOPMENT.md](DEVELOPMENT.md) for local setup, debugging, and testing.
 
 ```bash
 make test    # Go (race) + Vitest
