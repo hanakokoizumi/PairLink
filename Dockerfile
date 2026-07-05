@@ -22,7 +22,6 @@ COPY --from=web-deps /app/web/node_modules ./node_modules
 COPY web/next.config.ts web/tsconfig.json web/postcss.config.mjs web/middleware.ts ./
 COPY web/i18n ./i18n
 COPY web/messages ./messages
-COPY web/public ./public
 COPY web/app ./app
 COPY web/components ./components
 COPY web/hooks ./hooks
@@ -59,7 +58,6 @@ WORKDIR /app
 COPY --from=server /pairlink ./pairlink
 COPY --from=web-build /app/web/.next/standalone ./web/
 COPY --from=web-build /app/web/.next/static ./web/.next/static
-COPY --from=web-build /app/web/public ./web/public
 COPY deploy/docker-entrypoint.sh /docker-entrypoint.sh
 
 RUN chmod +x /docker-entrypoint.sh /app/pairlink \
