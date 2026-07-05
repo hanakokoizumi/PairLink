@@ -18,6 +18,7 @@ import {
   saveResumeRecord,
 } from "@/lib/storage/resume-store";
 import { useConfigStore } from "@/lib/stores/config-store";
+import { usePreferencesStore } from "@/lib/stores/preferences-store";
 import { useTransferStore } from "@/lib/stores/transfer-store";
 import type { SignalingState } from "@/hooks/use-signaling";
 
@@ -224,7 +225,9 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
         addActivity(`Rejected oversized file: ${meta.name}`, "warn");
         return;
       }
-      const autoAccept = settings?.autoAcceptFiles ?? true;
+      const autoAccept = usePreferencesStore
+        .getState()
+        .getAutoAcceptFiles(settings?.autoAcceptFiles);
       addItem({
         kind: "file",
         id: meta.id,

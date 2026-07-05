@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { useConfigStore } from "@/lib/stores/config-store";
 import { useAuthStore } from "@/lib/stores/auth-store";
+import { usePreferencesStore } from "@/lib/stores/preferences-store";
 import { Button } from "@/components/ui/button";
 
 export function ConfigProvider({ children }: { children: React.ReactNode }) {
@@ -16,7 +17,10 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     hydrate();
-    void fetchConfig().then(() => fetchMe());
+    void fetchConfig().then((config) => {
+      usePreferencesStore.getState().hydrate(config.settings.autoAcceptFiles);
+      fetchMe();
+    });
   }, [fetchConfig, fetchMe, hydrate]);
 
   if (!loaded) {
@@ -36,7 +40,10 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
           variant="outline"
           className="font-mono"
           onClick={() => {
-            void fetchConfig().then(() => fetchMe());
+            void fetchConfig().then((config) => {
+              usePreferencesStore.getState().hydrate(config.settings.autoAcceptFiles);
+              fetchMe();
+            });
           }}
         >
           {t("common.retry")}
