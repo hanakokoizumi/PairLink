@@ -61,6 +61,22 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
     new Map<string, (accepted: boolean) => void>(),
   );
   const chunkChains = useRef(new Map<string, Promise<void>>());
+  const autoDownloaded = useRef(new Set<string>());
+
+  const triggerRecvDownload = useCallback((id: string) => {
+    if (autoDownloaded.current.has(id)) return;
+    const item = useTransferStore.getState().items.find((i) => i.id === id);
+    if (!item || item.kind !== "file" || item.direction !== "recv") return;
+    if (item.size > 0 && !item.blob) return;
+    autoDownloaded.current.add(id);
+    const blob = item.blob ?? new Blob([], { type: item.mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = item.name;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, []);
 
   const waitForTransferResponse = useCallback((transferId: string) => {
     return new Promise<boolean>((resolve) => {
@@ -316,8 +332,9 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
       });
       await deleteResumeRecord(payload.id);
       addActivity(`Received ${item.name}`);
+      triggerRecvDownload(payload.id);
     },
-    [addActivity, updateItem],
+    [addActivity, triggerRecvDownload, updateItem],
   );
 
   const handleChunk = useCallback(
@@ -352,6 +369,8 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
             const blob = assembleBlob(record);
             updateItem(transferId, { blob, status: "done", progress: 100 });
             await deleteResumeRecord(transferId);
+            addActivity(`Received ${item.name}`);
+            triggerRecvDownload(transferId);
           }
         }
       };
@@ -361,7 +380,7 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
       chunkChains.current.set(transferId, next);
       await next;
     },
-    [roomId, updateItem, updateProgress],
+    [addActivity, roomId, triggerRecvDownload, updateItem, updateProgress],
   );
 
   return {
