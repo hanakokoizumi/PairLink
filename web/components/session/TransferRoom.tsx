@@ -65,6 +65,7 @@ function TransferSession({
   const t = useTranslations("session");
   const connectionMode = useTransferStore((s) => s.connectionMode);
   const revealMessage = useTransferStore((s) => s.revealMessage);
+  const hideMessage = useTransferStore((s) => s.hideMessage);
 
   useThemeEffect();
 
@@ -183,6 +184,7 @@ function TransferSession({
           onDownload={transfer.downloadFile}
           onResume={transfer.resumeFile}
           onReveal={revealMessage}
+          onHide={hideMessage}
         />
 
         <ActivityLog />

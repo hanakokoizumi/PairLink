@@ -44,6 +44,7 @@
     "messages": "メッセージ",
     "activity": "アクティビティ",
     "showContent": "内容を表示",
+    "hideContent": "内容を隠す",
     "maskedSent": "マスクされたメッセージ",
     "copyMessage": "コピー",
     "tabWrite": "編集",

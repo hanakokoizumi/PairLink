@@ -44,6 +44,7 @@
     "messages": "消息",
     "activity": "活动日志",
     "showContent": "展示内容",
+    "hideContent": "隐藏内容",
     "maskedSent": "掩码消息",
     "copyMessage": "复制",
     "tabWrite": "编写",

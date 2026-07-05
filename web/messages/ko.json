@@ -44,6 +44,7 @@
     "messages": "메시지",
     "activity": "활동 로그",
     "showContent": "내용 표시",
+    "hideContent": "내용 숨기기",
     "maskedSent": "마스크된 메시지",
     "copyMessage": "복사",
     "tabWrite": "작성",

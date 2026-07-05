@@ -26,6 +26,8 @@ describe("MessageItem", () => {
     expect(screen.getByText("••••••")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "session.showContent" }));
     expect(screen.getByText("secret")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "session.hideContent" }));
+    expect(screen.getByText("••••••")).toBeInTheDocument();
   });
 
   it("renders markdown when not masked", () => {

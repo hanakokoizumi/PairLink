@@ -11,6 +11,7 @@ type Props = {
   onDownload?: (id: string) => void;
   onResume?: (id: string) => void;
   onReveal?: (id: string) => void;
+  onHide?: (id: string) => void;
 };
 
 export function UnifiedItemList({
@@ -19,6 +20,7 @@ export function UnifiedItemList({
   onDownload,
   onResume,
   onReveal,
+  onHide,
 }: Props) {
   const t = useTranslations("session");
   const items = useTransferStore((s) => s.items);
@@ -44,7 +46,12 @@ export function UnifiedItemList({
             onResume={onResume}
           />
         ) : (
-          <MessageItem key={item.id} item={item} onReveal={onReveal} />
+          <MessageItem
+            key={item.id}
+            item={item}
+            onReveal={onReveal}
+            onHide={onHide}
+          />
         ),
       )}
     </div>

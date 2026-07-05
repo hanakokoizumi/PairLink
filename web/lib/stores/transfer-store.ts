@@ -54,6 +54,7 @@ type TransferState = {
   acceptFile: (id: string) => void;
   rejectFile: (id: string) => void;
   revealMessage: (id: string) => void;
+  hideMessage: (id: string) => void;
   setConnectionMode: (mode: ConnectionMode) => void;
   addActivity: (message: string, level?: ActivityEntry["level"]) => void;
   clear: () => void;
@@ -89,6 +90,8 @@ export const useTransferStore = create<TransferState>((set, get) => ({
     get().updateItem(id, { status: "rejected" } as Partial<TransferItem>),
   revealMessage: (id) =>
     get().updateItem(id, { revealed: true } as Partial<TransferItem>),
+  hideMessage: (id) =>
+    get().updateItem(id, { revealed: false } as Partial<TransferItem>),
   setConnectionMode: (connectionMode) => set({ connectionMode }),
   addActivity: (message, level = "info") =>
     set({

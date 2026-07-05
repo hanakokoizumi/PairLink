@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Copy, Eye } from "lucide-react";
+import { Copy, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { MarkdownRenderer } from "@/components/session/MarkdownRenderer";
@@ -13,15 +13,25 @@ type MessageItemProps = Extract<TransferItem, { kind: "message" }>;
 type Props = {
   item: MessageItemProps;
   onReveal?: (id: string) => void;
+  onHide?: (id: string) => void;
 };
 
-export function MessageItem({ item, onReveal }: Props) {
+export function MessageItem({ item, onReveal, onHide }: Props) {
   const t = useTranslations("session");
   const [revealed, setRevealed] = useState(item.revealed ?? !item.masked);
+
+  useEffect(() => {
+    setRevealed(item.revealed ?? !item.masked);
+  }, [item.revealed, item.masked]);
 
   const showContent = () => {
     setRevealed(true);
     onReveal?.(item.id);
+  };
+
+  const hideContent = () => {
+    setRevealed(false);
+    onHide?.(item.id);
   };
 
   const copy = async () => {
@@ -50,6 +60,12 @@ export function MessageItem({ item, onReveal }: Props) {
             <Button size="sm" variant="ghost" onClick={showContent}>
               <Eye className="mr-1 h-3 w-3" />
               {t("showContent")}
+            </Button>
+          )}
+          {item.masked && revealed && (
+            <Button size="sm" variant="ghost" onClick={hideContent}>
+              <EyeOff className="mr-1 h-3 w-3" />
+              {t("hideContent")}
             </Button>
           )}
           <Button size="sm" variant="ghost" onClick={copy}>

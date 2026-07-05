@@ -44,6 +44,7 @@
     "messages": "Messages",
     "activity": "Activity",
     "showContent": "Show content",
+    "hideContent": "Hide content",
     "maskedSent": "Masked message",
     "copyMessage": "Copy",
     "tabWrite": "Write",
