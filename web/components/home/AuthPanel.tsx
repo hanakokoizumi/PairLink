@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { useRouter } from "@/i18n/routing";
 import { toast } from "sonner";
@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConnectionCard } from "@/components/home/ConnectionCard";
 import { mapErrorCode } from "@/lib/api";
 import { fadeInUp } from "@/lib/motion";
+import { useHostGuestWatch } from "@/hooks/use-host-guest-watch";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { useConfigStore } from "@/lib/stores/config-store";
 import { useRoomStore } from "@/lib/stores/room-store";
@@ -68,9 +69,14 @@ export function AuthPanel() {
     }
   };
 
-  const goToSession = () => {
+  const goToSession = useCallback(() => {
     if (roomId) router.push(`/session/${roomId}`);
-  };
+  }, [roomId, router]);
+
+  useHostGuestWatch(roomId, showConnection, () => {
+    setShowConnection(false);
+    goToSession();
+  });
 
   return (
     <motion.div
