@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Copy, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
@@ -18,19 +17,13 @@ type Props = {
 
 export function MessageItem({ item, onReveal, onHide }: Props) {
   const t = useTranslations("session");
-  const [revealed, setRevealed] = useState(item.revealed ?? !item.masked);
-
-  useEffect(() => {
-    setRevealed(item.revealed ?? !item.masked);
-  }, [item.revealed, item.masked]);
+  const revealed = item.revealed ?? !item.masked;
 
   const showContent = () => {
-    setRevealed(true);
     onReveal?.(item.id);
   };
 
   const hideContent = () => {
-    setRevealed(false);
     onHide?.(item.id);
   };
 
