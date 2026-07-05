@@ -11,7 +11,10 @@ export function useHostGuestWatch(
 ) {
   const token = useAuthStore((s) => s.token);
   const onGuestJoinedRef = useRef(onGuestJoined);
-  onGuestJoinedRef.current = onGuestJoined;
+
+  useEffect(() => {
+    onGuestJoinedRef.current = onGuestJoined;
+  }, [onGuestJoined]);
 
   useEffect(() => {
     if (!enabled || !roomId) return;

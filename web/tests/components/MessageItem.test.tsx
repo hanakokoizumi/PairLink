@@ -17,7 +17,7 @@ function MaskedMessageFixture() {
         id: "m1",
         direction: "recv",
         text: "**secret**",
-        at: Date.now(),
+        at: 1_700_000_000_000,
         masked: true,
         revealed,
       }}
@@ -46,7 +46,7 @@ describe("MessageItem", () => {
           id: "m2",
           direction: "send",
           text: "hello **world**",
-          at: Date.now(),
+          at: 1_700_000_000_000,
           masked: false,
           revealed: true,
         }}
