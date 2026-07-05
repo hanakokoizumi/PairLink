@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/routing";
 import { ThemeToggle } from "./ThemeToggle";
 import { LocaleToggle } from "./LocaleToggle";
-import { Link2 } from "lucide-react";
+import { Link2, Github } from "lucide-react";
 
 export function AppHeader() {
   const t = useTranslations("common");
@@ -22,6 +22,15 @@ export function AppHeader() {
         </Link>
 
         <div className="flex items-center gap-2">
+          <a
+            href="https://github.com/hanakokoizumi/PairLink"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-card text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+            aria-label="GitHub"
+          >
+            <Github className="h-4 w-4" />
+          </a>
           <LocaleToggle />
           <ThemeToggle />
         </div>
