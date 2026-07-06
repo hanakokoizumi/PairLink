@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { useTranslations, useLocale } from "next-intl";
+import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/routing";
 import { toast } from "sonner";
 import { PairLinkLogo } from "@/components/brand/PairLinkLogo";
@@ -20,7 +20,6 @@ import { useRoomStore } from "@/lib/stores/room-store";
 
 export function AuthPanel() {
   const t = useTranslations();
-  const locale = useLocale();
   const router = useRouter();
   const config = useConfigStore((s) => s.config);
   const login = useAuthStore((s) => s.login);
@@ -67,7 +66,7 @@ export function AuthPanel() {
   const handleStart = async () => {
     setStarting(true);
     try {
-      await createRoom(locale);
+      await createRoom();
       setShowConnection(true);
     } catch (err) {
       const code =
