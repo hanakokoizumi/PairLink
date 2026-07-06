@@ -145,6 +145,7 @@ function TransferSession({
           : signaling.relay ?? signaling.dataChannel;
 
     return attach(activeSource);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- handler fns listed explicitly; not whole transfer object
   }, [
     connectionMode,
     signaling.dataChannel,
@@ -157,7 +158,6 @@ function TransferSession({
     transfer.handleResumeQuery,
     transfer.handleResumeState,
     transfer.handleTransferResponse,
-    transfer,
   ]);
 
   useEffect(() => {

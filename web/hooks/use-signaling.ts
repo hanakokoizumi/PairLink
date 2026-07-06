@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import { SignalingClient, type WsConfigPayload } from "@/lib/webrtc/signaling";
@@ -41,7 +41,9 @@ export type SignalingState = {
 export function useSignaling(roomId: string, role: "host" | "guest", code?: string) {
   const t = useTranslations();
   const tRef = useRef(t);
-  tRef.current = t;
+  useLayoutEffect(() => {
+    tRef.current = t;
+  }, [t]);
   const config = useConfigStore((s) => s.config);
   const token = useAuthStore((s) => s.token);
   const setWsConnected = useRoomStore((s) => s.setWsConnected);
@@ -128,7 +130,9 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
   );
 
   const clearPeerConnectionRef = useRef(clearPeerConnection);
-  clearPeerConnectionRef.current = clearPeerConnection;
+  useLayoutEffect(() => {
+    clearPeerConnectionRef.current = clearPeerConnection;
+  }, [clearPeerConnection]);
 
   const leaveSession = useCallback(() => {
     cancelPeerLeftGrace();
@@ -151,6 +155,7 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
   const switchToRelay = useCallback(() => {
     if (!config?.wsFallback || !signalingRef.current) return;
     if (!remotePeerIdRef.current) return;
+    if (!sessionKeyRef.current) return;
     if (useTransferStore.getState().connectionMode === "relay") return;
     iceMonitorRef.current?.dispose();
     iceMonitorRef.current = null;
@@ -174,18 +179,6 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
     const session = acquireRoomSession(roomId, token ?? undefined);
     const signaling = session.signaling;
     signalingRef.current = signaling;
-
-    const knownRemote = getRoomRemotePeerId(roomId);
-    if (knownRemote) {
-      remotePeerIdRef.current = knownRemote;
-      setPeerOnline(true);
-      setState((s) => ({
-        ...s,
-        peerOnline: true,
-        remotePeerId: knownRemote,
-        connected: signaling.isConnected(),
-      }));
-    }
 
     let disposed = false;
     clearHandlers();
@@ -221,7 +214,8 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
       return peer;
     };
 
-    if (knownRemote && !peerRef.current) {
+    const restoredRemote = getRoomRemotePeerId(roomId);
+    if (restoredRemote && !peerRef.current) {
       setupPeer(config.rtcConfig);
     }
 
@@ -239,6 +233,18 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
 
   void (async () => {
       try {
+        const knownRemote = getRoomRemotePeerId(roomId);
+        if (knownRemote) {
+          remotePeerIdRef.current = knownRemote;
+          setPeerOnline(true);
+          setState((s) => ({
+            ...s,
+            peerOnline: true,
+            remotePeerId: knownRemote,
+            connected: signaling.isConnected(),
+          }));
+        }
+
         if (!signaling.isConnected()) {
           await signaling.connect();
         }
@@ -289,10 +295,19 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
           const { peerId: remoteId } = payload as { peerId: string };
           const wasReconnect = cancelPeerLeftGrace();
           const isSamePeer = getRoomRemotePeerId(roomId) === remoteId;
+          if (!isSamePeer) {
+            sessionKeyRef.current = null;
+            handshakeSentRef.current = false;
+          }
           setRoomRemotePeerId(roomId, remoteId);
           remotePeerIdRef.current = remoteId;
           setPeerOnline(true);
-          setState((s) => ({ ...s, peerOnline: true, remotePeerId: remoteId }));
+          setState((s) => ({
+            ...s,
+            peerOnline: true,
+            remotePeerId: remoteId,
+            sessionKey: isSamePeer ? s.sessionKey : null,
+          }));
           if (!wasReconnect && !isSamePeer) {
             addActivity("Peer joined");
           }
@@ -387,13 +402,14 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
 
     return () => {
       disposed = true;
+      cancelPeerLeftGrace();
       clearHandlers();
       releaseRoomSession(roomId, () => {
-        cancelPeerLeftGrace();
         clearPeerConnectionRef.current({ notify: false });
         setWsConnected(false);
       });
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- clearPeerConnectionRef tracks latest callback
   }, [
     addActivity,
     cancelPeerLeftGrace,
