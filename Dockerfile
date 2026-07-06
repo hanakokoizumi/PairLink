@@ -58,9 +58,10 @@ WORKDIR /app
 COPY --from=server /pairlink ./pairlink
 COPY --from=web-build /app/web/.next/standalone ./web/
 COPY --from=web-build /app/web/.next/static ./web/.next/static
+COPY deploy/runtime-env.sh /runtime-env.sh
 COPY deploy/docker-entrypoint.sh /docker-entrypoint.sh
 
-RUN chmod +x /docker-entrypoint.sh /app/pairlink \
+RUN chmod +x /docker-entrypoint.sh /runtime-env.sh /app/pairlink \
  && chown -R node:node /app
 
 USER node

@@ -12,12 +12,15 @@ services:
     environment:
       PAIRLINK_LOAD_DOTENV: "false"
       TURN_ENABLED: ${TURN_ENABLED:-true}
+      PAIRLINK_RUNTIME_ENV: /data/runtime.env
     ports:
       - "${PORT:-8080}:8080"
     restart: unless-stopped
     depends_on:
       coturn:
         condition: service_started
+    volumes:
+      - pairlink-runtime:/data
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
       interval: 30s
@@ -32,7 +35,13 @@ services:
         required: false
     environment:
       TURN_ENABLED: ${TURN_ENABLED:-true}
+      PAIRLINK_RUNTIME_ENV: /data/runtime.env
     volumes:
+      - pairlink-runtime:/data
       - ./deploy/coturn-entrypoint.sh:/usr/local/bin/coturn-entrypoint.sh:ro
+      - ./deploy/runtime-env.sh:/usr/local/bin/runtime-env.sh:ro
     entrypoint: ["/bin/sh", "/usr/local/bin/coturn-entrypoint.sh"]
     restart: unless-stopped
+
+volumes:
+  pairlink-runtime:

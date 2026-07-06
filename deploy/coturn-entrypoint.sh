@@ -1,19 +1,25 @@
 #!/bin/sh
 set -e
 
+. /usr/local/bin/runtime-env.sh
+
 if [ "${TURN_ENABLED:-false}" != "true" ]; then
   echo "coturn: TURN_ENABLED is not true, skipping TURN server"
+  TURN_ENABLED=false
+  write_runtime_env
   exit 0
 fi
 
+TURN_USER="${TURN_USER:-pairlink}"
+TURN_REALM="${TURN_REALM:-pairlink}"
+TURN_PORT="${TURN_PORT:-3478}"
+
 if [ -z "${TURN_PASSWORD:-}" ]; then
-  echo "coturn: TURN_PASSWORD is required when TURN_ENABLED=true (run: make setup)" >&2
-  exit 1
+  TURN_PASSWORD="$(random_secret)"
+  echo "coturn: generated TURN_PASSWORD at container start"
 fi
 
-TURN_PORT="${TURN_PORT:-3478}"
-TURN_REALM="${TURN_REALM:-pairlink}"
-TURN_USER="${TURN_USER:-pairlink}"
+write_runtime_env
 
 set -- turnserver -n \
   --log-file=stdout \

@@ -2,8 +2,6 @@
 
 setup:
 	cp -n .env.example .env || true
-	chmod +x scripts/ensure-turn-env.sh deploy/coturn-entrypoint.sh
-	./scripts/ensure-turn-env.sh
 
 dev:
 	$(MAKE) -j2 dev-server dev-web

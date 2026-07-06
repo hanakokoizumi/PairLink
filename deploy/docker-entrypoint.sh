@@ -1,10 +1,20 @@
 #!/bin/sh
 set -e
 
+. /runtime-env.sh
+
 API_PORT="${PAIRLINK_API_PORT:-8081}"
 if [ "$API_PORT" != "8081" ]; then
   echo "pairlink: PAIRLINK_API_PORT must be 8081 for the prebuilt image (or rebuild with matching INTERNAL_API_URL)" >&2
   exit 1
+fi
+
+if [ "${TURN_ENABLED:-false}" = "true" ]; then
+  if ! wait_for_runtime_env; then
+    echo "pairlink: timed out waiting for TURN runtime credentials" >&2
+    exit 1
+  fi
+  export TURN_PASSWORD TURN_USER TURN_ENABLED
 fi
 
 PORT="$API_PORT" /app/pairlink &
