@@ -30,7 +30,7 @@ export class IceFallbackMonitor {
       return;
     }
 
-    if (state === "failed") {
+    if (state === "failed" || state === "closed") {
       this.triggerFallback();
       return;
     }
