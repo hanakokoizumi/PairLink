@@ -5,7 +5,6 @@ import {
   encryptFallbackChunk,
   generateFallbackKeyPair,
   isFallbackPublicKey,
-  parseFallbackPublicKey,
   serializeFallbackPublicKey,
 } from "@/lib/crypto/fallback";
 import {

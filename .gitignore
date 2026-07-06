@@ -1,4 +1,5 @@
 .env
+.cursor/full-audit/
 web/.env.local
 node_modules/
 web/node_modules/

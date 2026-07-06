@@ -3,7 +3,6 @@ import {
   deriveSessionKey as subtleDeriveSessionKey,
   encryptChunk as subtleEncryptChunk,
   encryptText as subtleEncryptText,
-  decryptText as subtleDecryptText,
   generateKeyPair as generateSubtleKeyPair,
   importPublicKey,
   isCryptoAvailable,
