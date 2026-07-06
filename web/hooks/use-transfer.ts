@@ -126,6 +126,7 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
       transferWaiters.current.get(id)?.(false);
       transportSend(signaling, "file-cancel", { id });
       updateItem(id, { status: "interrupted" });
+      chunkChains.current.delete(id);
       addActivity(`Cancelled ${item.name}`, "warn");
     },
     [addActivity, signaling, updateItem],
@@ -311,6 +312,9 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
       const autoAccept = usePreferencesStore
         .getState()
         .getAutoAcceptFiles(settings?.autoAcceptFiles);
+      if (useTransferStore.getState().items.some((i) => i.id === meta.id)) {
+        return;
+      }
       addItem({
         kind: "file",
         id: meta.id,
@@ -344,7 +348,7 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
             addActivity("Failed to decrypt masked message", "error");
             return;
           }
-        } else if (!text) {
+        } else {
           addActivity("Rejected invalid masked message", "warn");
           return;
         }
@@ -421,8 +425,13 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
         updateItem(payload.id, { status: "interrupted" });
         return;
       }
-      transport.send("file-complete", { id: payload.id });
+      const sha256 = await sha256Hex(item.file);
+      transport.send("file-complete", {
+        id: payload.id,
+        ...(sha256 ? { sha256 } : {}),
+      });
       cancelledTransfersRef.current.delete(payload.id);
+      chunkChains.current.delete(payload.id);
       updateItem(payload.id, { status: "done", progress: 100 });
       addActivity(`Resumed ${item.name}`);
     },
@@ -494,6 +503,7 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
             const blob = assembleBlob(record);
             updateItem(transferId, { blob, status: "done", progress: 100 });
             await deleteResumeRecord(transferId);
+            chunkChains.current.delete(transferId);
             addActivity(`Received ${item.name}`);
             triggerRecvDownload(transferId);
           }
