@@ -45,6 +45,7 @@ func (h *AuthHandlers) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req loginRequest
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid_request")
 		return
@@ -54,7 +55,7 @@ func (h *AuthHandlers) Login(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnauthorized, "invalid_credentials")
 		return
 	}
-	auth.SetTokenCookie(w, h.publicURL, token, h.jwtMaxAge)
+	auth.SetTokenCookie(w, r, h.publicURL, token, h.jwtMaxAge)
 	writeJSON(w, http.StatusOK, loginResponse{Token: token})
 }
 

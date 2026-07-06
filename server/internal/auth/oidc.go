@@ -194,7 +194,7 @@ func (p *OIDCProvider) CallbackHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	SetTokenCookie(w, p.publicURL, token, p.jwtMaxAge)
+	SetTokenCookie(w, r, p.publicURL, token, p.jwtMaxAge)
 	http.Redirect(w, r, p.publicURL+"/?logged_in=1", http.StatusFound)
 }
 
