@@ -3,13 +3,13 @@
 import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/routing";
-import { Download } from "lucide-react";
+import { LogIn } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { mapErrorCode } from "@/lib/api";
 import { fadeInUp } from "@/lib/motion";
 import { useConfigStore } from "@/lib/stores/config-store";
@@ -73,21 +73,15 @@ export function JoinPanel() {
       initial="hidden"
       animate="visible"
       custom={1}
-      className="flex flex-col items-center justify-center p-8 md:p-12"
+      className="flex flex-col items-center justify-center px-6 py-10 md:px-10 md:py-16"
     >
-      <span className="mb-6 flex h-16 w-16 items-center justify-center rounded-xl border border-accent/40 bg-accent/10 text-accent shadow-[0_0_24px_var(--glow)]">
-        <Download className="h-7 w-7" />
+      <span className="mb-8 flex h-16 w-16 items-center justify-center rounded-xl border border-accent/20 bg-accent/5 text-accent">
+        <LogIn className="h-7 w-7" />
       </span>
-      <h2 className="font-mono text-2xl font-bold tracking-tight">{t("home.receive")}</h2>
-      <p className="mt-3 max-w-sm text-center text-sm text-muted-foreground">
-        {t("home.receiveDescription")}
-      </p>
+      <h2 className="text-2xl font-semibold tracking-tight">{t("home.receive")}</h2>
 
-      <Card className="mt-8 w-full max-w-sm border-border/80 bg-card/80">
-        <CardHeader>
-          <CardTitle className="text-base">{t("home.joinConnection")}</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <Card className="mt-10 w-full max-w-sm">
+        <CardContent className="pt-5">
           <form onSubmit={handleJoin} className="space-y-4">
             <Label>{t("session.roomCode")}</Label>
             <div className="flex justify-center gap-2">
@@ -110,7 +104,7 @@ export function JoinPanel() {
             </p>
             <Button
               type="submit"
-              className="w-full font-mono"
+              className="w-full"
               disabled={loading || code.length !== codeLength}
             >
               {t("home.joinConnection")}
