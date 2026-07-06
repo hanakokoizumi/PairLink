@@ -8,7 +8,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
-	"github.com/go-chi/httprate"
 
 	"github.com/hanakokoizumi/pairlink/server/internal/auth"
 	"github.com/hanakokoizumi/pairlink/server/internal/config"
@@ -41,7 +40,7 @@ func NewRouter(deps Deps) http.Handler {
 	}))
 
 	if deps.Config.RateLimitPerIP > 0 {
-		r.Use(httprate.LimitByIP(deps.Config.RateLimitPerIP, time.Minute))
+		r.Use(rateLimitMiddleware(deps.Config, deps.Config.RateLimitPerIP))
 	}
 
 	jwtTTL, err := deps.Config.JWTExpireDuration()
@@ -64,7 +63,7 @@ func NewRouter(deps Deps) http.Handler {
 
 	r.Route("/api/auth", func(ar chi.Router) {
 		if deps.Config.LoginRateLimit > 0 {
-			ar.Use(httprate.LimitByIP(deps.Config.LoginRateLimit, time.Minute))
+			ar.Use(rateLimitMiddleware(deps.Config, deps.Config.LoginRateLimit))
 		}
 		ar.Post("/login", authHandlers.Login)
 		if deps.Auth.OIDC() != nil && deps.Auth.OIDC().Enabled() {
@@ -77,15 +76,21 @@ func NewRouter(deps Deps) http.Handler {
 	r.Route("/api/rooms", func(rr chi.Router) {
 		rr.With(deps.Auth.RequireAuth).Post("/", roomHandlers.Create)
 
-		if deps.Config.JoinRateLimit > 0 {
-			rr.With(httprate.LimitByIP(deps.Config.JoinRateLimit, time.Minute)).Get("/lookup", lookupHandler.Lookup)
+		lookupLimit := deps.Config.LookupRateLimit
+		if lookupLimit > 0 {
+			rr.With(rateLimitMiddleware(deps.Config, lookupLimit)).Get("/lookup", lookupHandler.Lookup)
 		} else {
 			rr.Get("/lookup", lookupHandler.Lookup)
 		}
 	})
 
 	if deps.WS != nil {
-		r.Get("/ws", deps.WS.ServeHTTP)
+		wsHandler := deps.WS
+		if deps.Config.WSConnectRateLimit > 0 {
+			r.With(rateLimitMiddleware(deps.Config, deps.Config.WSConnectRateLimit)).Get("/ws", wsHandler.ServeHTTP)
+		} else {
+			r.Get("/ws", wsHandler.ServeHTTP)
+		}
 	}
 
 	return r

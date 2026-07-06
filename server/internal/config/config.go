@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/json"
 	"fmt"
+	"net"
 	"strings"
 	"time"
 
@@ -37,7 +38,11 @@ type Config struct {
 
 	RoomCodeTTL    string `envconfig:"ROOM_CODE_TTL" default:"30m"`
 	RoomCodeLength int    `envconfig:"ROOM_CODE_LENGTH" default:"5"`
-	JoinRateLimit  int    `envconfig:"JOIN_RATE_LIMIT" default:"10"`
+	JoinRateLimit        int    `envconfig:"JOIN_RATE_LIMIT" default:"10"`
+	LookupRateLimit      int    `envconfig:"LOOKUP_RATE_LIMIT" default:"30"`
+	WSConnectRateLimit   int    `envconfig:"WS_CONNECT_RATE_LIMIT" default:"30"`
+	TrustedProxyCIDRs    string `envconfig:"TRUSTED_PROXY_CIDRS"`
+	TrustedProxyNets     []*net.IPNet `envconfig:"-"`
 
 	AutoAcceptFiles   bool   `envconfig:"AUTO_ACCEPT_FILES" default:"true"`
 	DefaultMaskOnSend bool   `envconfig:"DEFAULT_MASK_ON_SEND" default:"false"`

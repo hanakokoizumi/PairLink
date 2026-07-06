@@ -107,7 +107,8 @@ function bytesToHex(bytes: ArrayBuffer): string {
     .join("");
 }
 
-export async function sha256Hex(blob: Blob): Promise<string> {
+export async function sha256Hex(blob: Blob): Promise<string | undefined> {
+  if (!crypto.subtle) return undefined;
   const digest = await crypto.subtle.digest("SHA-256", await blob.arrayBuffer());
   return bytesToHex(digest);
 }

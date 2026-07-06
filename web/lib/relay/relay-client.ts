@@ -6,6 +6,23 @@ import {
   type EncryptedChunk,
 } from "@/lib/crypto/e2e";
 
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = "";
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]!);
+  }
+  return btoa(binary);
+}
+
+function base64ToBuf(b64: string): ArrayBuffer {
+  const binary = atob(b64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes.buffer;
+}
+
 export type RelayMessage = {
   type: string;
   payload?: unknown;
@@ -54,10 +71,19 @@ export class RelayClient {
   }
 
   async send(type: string, payload?: unknown) {
-    if (!this.sessionKey) return;
     const plaintext = new TextEncoder().encode(
       JSON.stringify({ type, payload }),
     );
+    if (!this.sessionKey) {
+      this.signaling.relayChunk({
+        transferId: `__ctrl__:${type}`,
+        seq: this.seq++,
+        ciphertext: bytesToBase64(new Uint8Array(plaintext)),
+        iv: "",
+        to: this.peerId,
+      });
+      return;
+    }
     const encrypted = await encryptChunk(this.sessionKey, plaintext);
     this.signaling.relayChunk({
       transferId: `__ctrl__:${type}`,
@@ -69,8 +95,17 @@ export class RelayClient {
   }
 
   async sendBinary(transferId: string, offset: number, data: ArrayBuffer) {
-    if (!this.sessionKey) return;
     const framed = frameBinaryChunk(transferId, offset, data);
+    if (!this.sessionKey) {
+      this.signaling.relayChunk({
+        transferId,
+        seq: this.seq++,
+        ciphertext: bytesToBase64(new Uint8Array(framed)),
+        iv: "",
+        to: this.peerId,
+      });
+      return;
+    }
     const encrypted = await encryptChunk(this.sessionKey, framed);
     this.signaling.relayChunk({
       transferId,
@@ -84,13 +119,10 @@ export class RelayClient {
   private async handleIncoming(
     chunk: EncryptedChunk & { transferId: string },
   ) {
-    if (!this.sessionKey) return;
     try {
-      const plain = await decryptChunk(
-        this.sessionKey,
-        chunk.iv,
-        chunk.ciphertext,
-      );
+      const plain = chunk.iv
+        ? await this.decryptChunk(chunk)
+        : base64ToBuf(chunk.ciphertext);
       const text = new TextDecoder().decode(plain);
       try {
         const msg = JSON.parse(text) as RelayMessage;
@@ -104,6 +136,13 @@ export class RelayClient {
     } catch {
       // decryption failed
     }
+  }
+
+  private async decryptChunk(chunk: EncryptedChunk): Promise<ArrayBuffer> {
+    if (!this.sessionKey) {
+      throw new Error("missing session key");
+    }
+    return decryptChunk(this.sessionKey, chunk.iv, chunk.ciphertext);
   }
 
   private dispatch(type: string, payload: unknown) {

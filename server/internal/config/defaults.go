@@ -5,6 +5,8 @@ import (
 	"encoding/base64"
 	"fmt"
 	"os"
+
+	"github.com/hanakokoizumi/pairlink/server/internal/clientip"
 )
 
 // ApplyDefaults fills missing values and infers zero-config behavior.
@@ -44,6 +46,14 @@ func ApplyDefaults(cfg *Config) error {
 
 	if _, err := cfg.RoomCodeTTLDuration(); err != nil {
 		return fmt.Errorf("invalid ROOM_CODE_TTL: %w", err)
+	}
+
+	if cfg.TrustedProxyCIDRs != "" {
+		nets, err := clientip.ParseCIDRs(cfg.TrustedProxyCIDRs)
+		if err != nil {
+			return fmt.Errorf("invalid TRUSTED_PROXY_CIDRS: %w", err)
+		}
+		cfg.TrustedProxyNets = nets
 	}
 
 	return nil

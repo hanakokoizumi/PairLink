@@ -14,6 +14,7 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"github.com/hanakokoizumi/pairlink/server/internal/auth"
+	"github.com/hanakokoizumi/pairlink/server/internal/clientip"
 	"github.com/hanakokoizumi/pairlink/server/internal/config"
 	"github.com/hanakokoizumi/pairlink/server/internal/relay"
 	"github.com/hanakokoizumi/pairlink/server/internal/room"
@@ -53,7 +54,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	client := NewClient(conn, h.hub, int64(h.cfg.WSMaxMessageBytes), h.handleMessage)
-	client.SetIP(clientIP(r))
+	client.SetIP(clientip.FromRequest(r, h.cfg.TrustedProxyNets))
 	if !h.auth.DisableAuth() {
 		if token := auth.ExtractToken(r); token != "" {
 			if claims, err := h.auth.ValidateToken(token); err == nil {
@@ -182,6 +183,68 @@ func (h *Handler) handleAuth(c *Client, payload any) error {
 	return c.SendJSON(Envelope{Type: "auth-ok"})
 }
 
+func (h *Handler) sleepJoinFailure(clientIP string) {
+	if delay := h.joinLimiter.failureDelay(clientIP); delay > 0 {
+		time.Sleep(delay)
+	}
+}
+
+func (h *Handler) sendHostWsConfig(c *Client, r *room.Room, peerID string) error {
+	if err := c.SendJSON(Envelope{
+		Type: "ws-config",
+		Payload: WSConfigPayload{
+			PeerID:          peerID,
+			RoomID:          r.ID,
+			Role:            string(room.RoleHost),
+			WSFallback:      h.cfg.WSFallback,
+			MaxMessageBytes: h.cfg.WSMaxMessageBytes,
+		},
+	}); err != nil {
+		return err
+	}
+	h.notifyExistingPeers(c, r, peerID)
+	return nil
+}
+
+func (h *Handler) sendGuestWsConfig(c *Client, r *room.Room, peerID string) error {
+	if err := c.SendJSON(Envelope{
+		Type: "ws-config",
+		Payload: WSConfigPayload{
+			PeerID:          peerID,
+			RoomID:          r.ID,
+			Role:            string(room.RoleGuest),
+			WSFallback:      h.cfg.WSFallback,
+			MaxMessageBytes: h.cfg.WSMaxMessageBytes,
+		},
+	}); err != nil {
+		return err
+	}
+	h.notifyExistingPeers(c, r, peerID)
+	return nil
+}
+
+func (h *Handler) tryIdempotentHostJoin(c *Client, roomID string) (bool, error) {
+	existingRoom, existingPeer, ok := h.rooms.GetRoomByConnID(c.ConnID())
+	if !ok || existingPeer.ID == "" || existingRoom.ID != roomID {
+		return false, nil
+	}
+	return true, h.sendHostWsConfig(c, existingRoom, existingPeer.ID)
+}
+
+func (h *Handler) tryIdempotentGuestJoin(c *Client, roomID, code string) (bool, error) {
+	existingRoom, existingPeer, ok := h.rooms.GetRoomByConnID(c.ConnID())
+	if !ok || existingPeer.ID == "" {
+		return false, nil
+	}
+	if roomID != "" && existingRoom.ID == roomID {
+		return true, h.sendGuestWsConfig(c, existingRoom, existingPeer.ID)
+	}
+	if code != "" && room.NormalizeCode(existingRoom.Code) == room.NormalizeCode(code) {
+		return true, h.sendGuestWsConfig(c, existingRoom, existingPeer.ID)
+	}
+	return false, nil
+}
+
 func (h *Handler) handleHostJoin(c *Client, payload any) error {
 	data, err := json.Marshal(payload)
 	if err != nil {
@@ -206,38 +269,24 @@ func (h *Handler) handleHostJoin(c *Client, payload any) error {
 		}
 	}
 
+	if handled, err := h.tryIdempotentHostJoin(c, p.RoomID); handled || err != nil {
+		return err
+	}
+
 	if !h.joinLimiter.allow(c.ClientIP()) {
 		return errors.New("rate limited")
 	}
 
 	r, err := h.rooms.FindByID(p.RoomID)
 	if err != nil {
+		h.joinLimiter.recordFailure(c.ClientIP())
+		h.sleepJoinFailure(c.ClientIP())
 		return err
 	}
 
 	if !h.auth.DisableAuth() {
 		if uid := c.UserID(); uid != "" && uid != r.OwnerID {
 			return errors.New("forbidden host join")
-		}
-	}
-
-	// Idempotent re-join for the same connection.
-	if existingRoom, existingPeer, ok := h.rooms.GetRoomByConnID(c.ConnID()); ok {
-		if existingRoom.ID == r.ID && existingPeer.ID != "" {
-			if err := c.SendJSON(Envelope{
-				Type: "ws-config",
-				Payload: WSConfigPayload{
-					PeerID:          existingPeer.ID,
-					RoomID:          r.ID,
-					Role:            string(room.RoleHost),
-					WSFallback:      h.cfg.WSFallback,
-					MaxMessageBytes: h.cfg.WSMaxMessageBytes,
-				},
-			}); err != nil {
-				return err
-			}
-			h.notifyExistingPeers(c, r, existingPeer.ID)
-			return nil
 		}
 	}
 
@@ -255,16 +304,7 @@ func (h *Handler) handleHostJoin(c *Client, payload any) error {
 	}
 	c.SetPeer(peerID, r.ID, string(room.RoleHost))
 
-	if err := c.SendJSON(Envelope{
-		Type: "ws-config",
-		Payload: WSConfigPayload{
-			PeerID:          peerID,
-			RoomID:          r.ID,
-			Role:            string(room.RoleHost),
-			WSFallback:      h.cfg.WSFallback,
-			MaxMessageBytes: h.cfg.WSMaxMessageBytes,
-		},
-	}); err != nil {
+	if err := h.sendHostWsConfig(c, r, peerID); err != nil {
 		return err
 	}
 
@@ -276,7 +316,6 @@ func (h *Handler) handleHostJoin(c *Client, payload any) error {
 		},
 	})
 	h.hub.BroadcastToRoom(r.ID, joined, c.ConnID())
-	h.notifyExistingPeers(c, r, peerID)
 	return nil
 }
 
@@ -304,46 +343,33 @@ func (h *Handler) handleJoinRoom(c *Client, payload any) error {
 	if err := json.Unmarshal(data, &p); err != nil {
 		return err
 	}
+	if p.RoomID == "" && p.Code == "" {
+		return errors.New("missing room identifier")
+	}
+
+	if handled, err := h.tryIdempotentGuestJoin(c, p.RoomID, p.Code); handled || err != nil {
+		return err
+	}
+
+	if !h.joinLimiter.allow(c.ClientIP()) {
+		return errors.New("rate limited")
+	}
 
 	var r *room.Room
 	if p.RoomID != "" {
-		if !h.joinLimiter.allow(c.ClientIP()) {
-			return errors.New("rate limited")
-		}
 		r, err = h.rooms.FindByID(p.RoomID)
-	} else if p.Code != "" {
-		if !h.joinLimiter.allow(c.ClientIP()) {
-			return errors.New("rate limited")
-		}
-		r, err = h.rooms.FindByCode(p.Code)
 	} else {
-		return errors.New("missing room identifier")
+		r, err = h.rooms.FindByCode(p.Code)
 	}
 	if err != nil {
+		h.joinLimiter.recordFailure(c.ClientIP())
+		h.sleepJoinFailure(c.ClientIP())
 		return err
 	}
 	if p.RoomID != "" && p.Code != "" && r.Code != p.Code {
+		h.joinLimiter.recordFailure(c.ClientIP())
+		h.sleepJoinFailure(c.ClientIP())
 		return room.ErrRoomNotFound
-	}
-
-	// Idempotent re-join for the same connection.
-	if existingRoom, existingPeer, ok := h.rooms.GetRoomByConnID(c.ConnID()); ok {
-		if existingRoom.ID == r.ID && existingPeer.ID != "" {
-			if err := c.SendJSON(Envelope{
-				Type: "ws-config",
-				Payload: WSConfigPayload{
-					PeerID:          existingPeer.ID,
-					RoomID:          r.ID,
-					Role:            string(room.RoleGuest),
-					WSFallback:      h.cfg.WSFallback,
-					MaxMessageBytes: h.cfg.WSMaxMessageBytes,
-				},
-			}); err != nil {
-				return err
-			}
-			h.notifyExistingPeers(c, r, existingPeer.ID)
-			return nil
-		}
 	}
 
 	h.leaveOtherRoom(c, r.ID)
@@ -360,16 +386,7 @@ func (h *Handler) handleJoinRoom(c *Client, payload any) error {
 	}
 	c.SetPeer(peerID, r.ID, string(room.RoleGuest))
 
-	if err := c.SendJSON(Envelope{
-		Type: "ws-config",
-		Payload: WSConfigPayload{
-			PeerID:          peerID,
-			RoomID:          r.ID,
-			Role:            string(room.RoleGuest),
-			WSFallback:      h.cfg.WSFallback,
-			MaxMessageBytes: h.cfg.WSMaxMessageBytes,
-		},
-	}); err != nil {
+	if err := h.sendGuestWsConfig(c, r, peerID); err != nil {
 		return err
 	}
 
@@ -381,7 +398,6 @@ func (h *Handler) handleJoinRoom(c *Client, payload any) error {
 		},
 	})
 	h.hub.BroadcastToRoom(r.ID, joined, c.ConnID())
-	h.notifyExistingPeers(c, r, peerID)
 	return nil
 }
 

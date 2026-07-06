@@ -202,7 +202,7 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
           offset += buffer.byteLength;
           updateProgress(id, offset, file.size);
         }
-        transport.send("file-complete", { id, sha256 });
+        transport.send("file-complete", { id, ...(sha256 ? { sha256 } : {}) });
         updateItem(id, { status: "done", progress: 100 });
         addActivity(`Sent ${file.name}`);
       }

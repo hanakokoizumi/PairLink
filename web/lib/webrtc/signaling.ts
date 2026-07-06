@@ -91,6 +91,17 @@ export class SignalingClient {
             this.sendRaw({ type: "pong" });
             return;
           }
+          if (env.type === "error") {
+            const code =
+              env.payload &&
+              typeof env.payload === "object" &&
+              "code" in env.payload
+                ? String((env.payload as { code: string }).code)
+                : "";
+            if (code === "rate_limited") {
+              this.shouldReconnect = false;
+            }
+          }
           this.dispatch(env.type, env.payload);
         } catch {
           // ignore malformed frames

@@ -1,6 +1,11 @@
 const ALGO = { name: "AES-GCM", length: 256 } as const;
 const ECDH = { name: "ECDH", namedCurve: "P-256" } as const;
 
+/** Web Crypto (crypto.subtle) requires a secure context (HTTPS or localhost). */
+export function isCryptoAvailable(): boolean {
+  return typeof crypto !== "undefined" && !!crypto.subtle;
+}
+
 export type KeyPairBundle = {
   publicKey: CryptoKey;
   privateKey: CryptoKey;
@@ -31,6 +36,9 @@ function base64ToBuf(b64: string): ArrayBuffer {
 }
 
 export async function generateKeyPair(): Promise<KeyPairBundle> {
+  if (!isCryptoAvailable()) {
+    throw new Error("crypto_unavailable");
+  }
   const pair = await crypto.subtle.generateKey(ECDH, true, ["deriveKey"]);
   const publicKeyJwk = await crypto.subtle.exportKey("jwk", pair.publicKey);
   return { ...pair, publicKeyJwk };

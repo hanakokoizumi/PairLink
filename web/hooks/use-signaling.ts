@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { SignalingClient, type WsConfigPayload } from "@/lib/webrtc/signaling";
 import { PeerConnection, isWebRtcSupported } from "@/lib/webrtc/peer";
 import { DataChannelClient } from "@/lib/webrtc/datachannel";
@@ -10,6 +12,7 @@ import {
   deriveSessionKey,
   generateKeyPair,
   importPublicKey,
+  isCryptoAvailable,
   parsePublicKey,
   serializePublicKey,
 } from "@/lib/crypto/e2e";
@@ -30,6 +33,7 @@ export type SignalingState = {
 };
 
 export function useSignaling(roomId: string, role: "host" | "guest", code?: string) {
+  const t = useTranslations();
   const config = useConfigStore((s) => s.config);
   const token = useAuthStore((s) => s.token);
   const setWsConnected = useRoomStore((s) => s.setWsConnected);
@@ -132,7 +136,14 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
         setWsConnected(true);
         setState((s) => ({ ...s, connected: true }));
 
-        keyPairRef.current = await generateKeyPair();
+        if (isCryptoAvailable()) {
+          keyPairRef.current = await generateKeyPair();
+        } else {
+          addActivity(
+            "Encryption unavailable (use HTTPS or localhost for masked messages)",
+            "warn",
+          );
+        }
 
         signaling.on("ws-config", (payload) => {
           const wsConfig = payload as WsConfigPayload;
@@ -153,6 +164,9 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
             payload && typeof payload === "object" && "code" in payload
               ? String((payload as { code: string }).code)
               : "join_failed";
+          if (code === "rate_limited") {
+            toast.error(t("errors.rateLimited"));
+          }
           addActivity(`Connection error: ${code}`, "error");
         });
 
@@ -303,6 +317,7 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
     setWsConnected,
     switchToRelay,
     token,
+    t,
   ]);
 
   return state;
