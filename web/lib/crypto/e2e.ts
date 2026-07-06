@@ -89,6 +89,21 @@ export async function decryptChunk(
   );
 }
 
+export async function encryptText(
+  key: CryptoKey,
+  text: string,
+): Promise<EncryptedChunk> {
+  return encryptChunk(key, new TextEncoder().encode(text));
+}
+
+export async function decryptText(
+  key: CryptoKey,
+  chunk: EncryptedChunk,
+): Promise<string> {
+  const plain = await decryptChunk(key, chunk.iv, chunk.ciphertext);
+  return new TextDecoder().decode(plain);
+}
+
 export function serializePublicKey(jwk: JsonWebKey): string {
   return JSON.stringify(jwk);
 }

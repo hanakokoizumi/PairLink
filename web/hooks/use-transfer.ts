@@ -10,6 +10,7 @@ import {
   type FileMetaPayload,
   validateFileSize,
 } from "@/lib/webrtc/file-transfer";
+import { encryptText, decryptText } from "@/lib/crypto/e2e";
 import {
   appendChunk,
   assembleBlob,
@@ -101,20 +102,38 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
   );
 
   const sendMessage = useCallback(
-    (text: string, masked = false) => {
+    async (text: string, masked = false) => {
       const transport = getTransport(signaling);
       if (!transport || !settings) return;
       if (text.length > settings.messageMaxLength) {
         toast.error(t("errors.messageTooLong"));
         return;
       }
-      const payload: ChatPayload = {
-        id: generateTransferId(),
-        text,
-        at: Date.now(),
-        masked,
-        format: "markdown",
-      };
+      const id = generateTransferId();
+      const at = Date.now();
+      let payload: ChatPayload;
+      if (masked) {
+        if (!signaling.sessionKey) {
+          toast.error(t("errors.encryptionNotReady"));
+          return;
+        }
+        const textEnc = await encryptText(signaling.sessionKey, text);
+        payload = {
+          id,
+          at,
+          masked: true,
+          format: "markdown",
+          textEnc,
+        };
+      } else {
+        payload = {
+          id,
+          text,
+          at,
+          masked: false,
+          format: "markdown",
+        };
+      }
       transport.send("chat", payload);
       addItem({
         kind: "message",
@@ -247,10 +266,28 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
   );
 
   const handleIncomingChat = useCallback(
-    (chat: ChatPayload) => {
+    async (chat: ChatPayload) => {
+      let text = chat.text ?? "";
+      if (chat.masked) {
+        if (chat.textEnc) {
+          if (!signaling.sessionKey) {
+            addActivity("Cannot decrypt masked message", "warn");
+            return;
+          }
+          try {
+            text = await decryptText(signaling.sessionKey, chat.textEnc);
+          } catch {
+            addActivity("Failed to decrypt masked message", "error");
+            return;
+          }
+        } else if (!text) {
+          addActivity("Rejected invalid masked message", "warn");
+          return;
+        }
+      }
       if (
         settings &&
-        chat.text.length > settings.messageMaxLength
+        text.length > settings.messageMaxLength
       ) {
         addActivity("Rejected oversized message", "warn");
         return;
@@ -259,14 +296,14 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
         kind: "message",
         id: chat.id,
         direction: "recv",
-        text: chat.text,
+        text,
         at: chat.at,
         format: chat.format ?? "markdown",
         masked: chat.masked,
         revealed: !chat.masked,
       });
     },
-    [addActivity, addItem, settings],
+    [addActivity, addItem, settings, signaling.sessionKey],
   );
 
   const onAcceptFile = useCallback(

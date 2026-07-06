@@ -21,7 +21,8 @@ export type FileCompletePayload = {
 
 export type ChatPayload = {
   id: string;
-  text: string;
+  text?: string;
+  textEnc?: { iv: string; ciphertext: string };
   at: number;
   masked?: boolean;
   format?: "markdown";

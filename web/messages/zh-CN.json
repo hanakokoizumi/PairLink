@@ -70,6 +70,7 @@
   },
   "errors": {
     "generic": "出了点问题",
+    "encryptionNotReady": "加密尚未就绪，请等待对方连接",
     "notFound": "页面未找到",
     "network": "网络错误",
     "connectionFailed": "连接失败",

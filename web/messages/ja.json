@@ -70,6 +70,7 @@
   },
   "errors": {
     "generic": "問題が発生しました",
+    "encryptionNotReady": "暗号化の準備ができていません。相手の接続をお待ちください",
     "notFound": "ページが見つかりません",
     "network": "ネットワークエラー",
     "connectionFailed": "接続に失敗しました",

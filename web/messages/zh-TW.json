@@ -70,6 +70,7 @@
   },
   "errors": {
     "generic": "出了點問題",
+    "encryptionNotReady": "加密尚未就緒，請等待對方連線",
     "notFound": "找不到頁面",
     "network": "網路錯誤",
     "connectionFailed": "連線失敗",

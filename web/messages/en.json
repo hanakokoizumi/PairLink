@@ -70,6 +70,7 @@
   },
   "errors": {
     "generic": "Something went wrong",
+    "encryptionNotReady": "Encryption is not ready yet; wait for the peer to connect",
     "notFound": "Page not found",
     "network": "Network error",
     "connectionFailed": "Connection failed",

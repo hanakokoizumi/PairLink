@@ -26,6 +26,7 @@ export type SignalingState = {
   role: "host" | "guest" | null;
   peerId: string | null;
   remotePeerId: string | null;
+  sessionKey: CryptoKey | null;
 };
 
 export function useSignaling(roomId: string, role: "host" | "guest", code?: string) {
@@ -45,6 +46,7 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
     role: null,
     peerId: null,
     remotePeerId: null,
+    sessionKey: null,
   });
 
   const signalingRef = useRef<SignalingClient | null>(null);
@@ -203,6 +205,7 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
             dataChannel: null,
             relay: null,
             remotePeerId: null,
+            sessionKey: null,
           }));
           addActivity("Peer disconnected", "warn");
           for (const item of useTransferStore.getState().items) {
@@ -251,6 +254,7 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
               peerKey,
             );
             relayRef.current?.setSessionKey(sessionKeyRef.current);
+            setState((s) => ({ ...s, sessionKey: sessionKeyRef.current }));
             if (remotePeerIdRef.current) {
               relayRef.current?.setPeerId(remotePeerIdRef.current);
             }
