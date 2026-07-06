@@ -19,7 +19,7 @@ RUN corepack enable && corepack prepare pnpm@9 --activate
 COPY web/package.json web/pnpm-lock.yaml ./
 COPY --from=web-deps /app/web/node_modules ./node_modules
 
-COPY web/next.config.ts web/tsconfig.json web/postcss.config.mjs web/middleware.ts ./
+COPY web/next.config.ts web/tsconfig.json web/postcss.config.mjs web/proxy.ts ./
 COPY web/i18n ./i18n
 COPY web/messages ./messages
 COPY web/app ./app
