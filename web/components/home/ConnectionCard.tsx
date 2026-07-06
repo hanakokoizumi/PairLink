@@ -58,8 +58,6 @@ export function ConnectionCard({
     toast.success(t("common.copied"));
   };
 
-  const minutesLeftDisplay = minutesLeft;
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -67,20 +65,20 @@ export function ConnectionCard({
           <DialogTitle>{t("connection.sessionReady")}</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-6">
           <div className="text-center">
             <p className="font-mono text-4xl font-bold tracking-[0.4em] text-primary">
               {code}
             </p>
-            {minutesLeftDisplay !== null && (
+            {minutesLeft !== null && (
               <p className="mt-2 text-xs text-muted-foreground">
-                {t("connection.expiresIn", { minutes: minutesLeftDisplay })}
+                {t("connection.expiresIn", { minutes: minutesLeft })}
               </p>
             )}
           </div>
 
           <div className="space-y-2">
-            <Label>{t("session.roomCode")}</Label>
+            <Label>{t("connection.shareLink")}</Label>
             <div className="flex gap-2">
               <Input readOnly value={url} className="font-mono text-xs" />
               <Button
@@ -96,14 +94,14 @@ export function ConnectionCard({
           </div>
 
           {url && (
-            <div className="flex justify-center rounded-lg border border-border bg-background p-4">
+            <div className="flex justify-center rounded-2xl border border-border/40 bg-muted/30 p-6">
               <QRCodeSVG value={url} size={160} level="M" />
             </div>
           )}
 
           {onContinue && (
-            <Button className="w-full font-mono" onClick={onContinue}>
-              {t("connection.sessionReady")}
+            <Button className="w-full" onClick={onContinue}>
+              {t("connection.enterSession")}
             </Button>
           )}
         </div>
