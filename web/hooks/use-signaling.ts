@@ -62,6 +62,7 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
     remotePeerId: null,
     sessionKey: null,
   });
+  const [peerDissolved, setPeerDissolved] = useState(false);
 
   const signalingRef = useRef<SignalingClient | null>(null);
   const peerRef = useRef<PeerConnection | null>(null);
@@ -139,8 +140,13 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
     clearPeerConnectionRef.current = clearPeerConnection;
   }, [clearPeerConnection]);
 
+  const dismissPeerDissolved = useCallback(() => {
+    setPeerDissolved(false);
+  }, []);
+
   const leaveSession = useCallback(() => {
     cancelPeerLeftGrace();
+    setPeerDissolved(false);
     clearHandlers();
     destroyRoomSession(roomId);
     signalingRef.current = null;
@@ -401,7 +407,11 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
           cancelPeerLeftGrace();
           peerLeftTimerRef.current = setTimeout(() => {
             peerLeftTimerRef.current = null;
+            const hadPeer = remotePeerIdRef.current !== null;
             clearPeerConnection();
+            if (hadPeer) {
+              setPeerDissolved(true);
+            }
           }, 800);
         });
 
@@ -509,6 +519,8 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
 
   return {
     ...state,
+    peerDissolved,
+    dismissPeerDissolved,
     leaveSession,
     switchToRelay: () => switchToRelay(true),
     switchToWebRTC: () => switchToWebRTC(true),

@@ -56,6 +56,9 @@
     "markdownHint": "Markdown supported",
     "leaveWarning": "A transfer is in progress. Leave anyway?",
     "leaveSession": "End session",
+    "connectionDissolved": "Connection ended",
+    "connectionDissolvedHint": "The other party has ended the connection.",
+    "connectionDissolvedConfirm": "Back to home",
     "sendMessage": "Send message",
     "maskMessage": "Mask message"
   },

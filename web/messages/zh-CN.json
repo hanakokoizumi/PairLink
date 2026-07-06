@@ -56,6 +56,9 @@
     "markdownHint": "支持 Markdown",
     "leaveWarning": "传输进行中，确定离开？",
     "leaveSession": "解散连接",
+    "connectionDissolved": "连接已解散",
+    "connectionDissolvedHint": "对方已解散连接。",
+    "connectionDissolvedConfirm": "返回首页",
     "sendMessage": "发送消息",
     "maskMessage": "掩码发送"
   },

@@ -11,6 +11,12 @@ import { MessageComposer } from "@/components/session/MessageComposer";
 import { UnifiedItemList } from "@/components/session/UnifiedItemList";
 import { ActivityLog } from "@/components/session/ActivityLog";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useSignaling } from "@/hooks/use-signaling";
 import { useTransfer } from "@/hooks/use-transfer";
 import { useThemeEffect } from "@/hooks/use-theme-effect";
@@ -206,7 +212,36 @@ function TransferSession({
     router.push("/");
   }, [clearTransfer, resetRoom, router, signaling, t]);
 
+  const handlePeerDissolved = useCallback(() => {
+    if (!signaling.peerDissolved) return;
+    signaling.dismissPeerDissolved();
+    signaling.leaveSession();
+    clearTransfer();
+    resetRoom();
+    router.push("/");
+  }, [clearTransfer, resetRoom, router, signaling]);
+
   return (
+    <>
+    <Dialog
+      open={signaling.peerDissolved}
+      onOpenChange={(open) => {
+        if (!open) handlePeerDissolved();
+      }}
+    >
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>{t("connectionDissolved")}</DialogTitle>
+        </DialogHeader>
+        <p className="text-sm text-muted-foreground">
+          {t("connectionDissolvedHint")}
+        </p>
+        <Button type="button" className="w-full" onClick={handlePeerDissolved}>
+          {t("connectionDissolvedConfirm")}
+        </Button>
+      </DialogContent>
+    </Dialog>
+
     <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-8 px-6 py-10 lg:flex-row">
       <div className="flex min-w-0 flex-1 flex-col gap-4 lg:w-2/3">
         <div className="flex items-center justify-between border-b border-border/40 pb-4">
@@ -254,5 +289,6 @@ function TransferSession({
         <MessageComposer onSend={transfer.sendMessage} disabled={disabled} />
       </aside>
     </div>
+    </>
   );
 }
