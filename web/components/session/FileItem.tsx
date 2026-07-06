@@ -48,10 +48,10 @@ export function FileItem({
                 : t("pending");
 
   return (
-    <div className="rounded-lg border border-border bg-card/60 p-4">
+    <div className="rounded-xl border border-border/40 bg-card/60 p-4 transition-colors duration-150 hover:bg-muted/20">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p className="truncate font-mono text-sm font-medium">{item.name}</p>
+          <p className="truncate text-sm font-medium">{item.name}</p>
           <p className="mt-1 font-mono text-xs text-muted-foreground">
             {formatBytes(item.size)} · {item.direction === "send" ? "↑" : "↓"}
           </p>

@@ -33,7 +33,7 @@ export function MessageItem({ item, onReveal, onHide }: Props) {
   };
 
   return (
-    <div className="rounded-lg border border-border bg-card/60 p-4">
+    <div className="rounded-xl border border-border/40 bg-card/60 p-4 transition-colors duration-150 hover:bg-muted/20">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           {item.masked && !revealed ? (
@@ -43,7 +43,7 @@ export function MessageItem({ item, onReveal, onHide }: Props) {
           ) : (
             <MarkdownRenderer content={item.text} />
           )}
-          <p className="mt-2 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+          <p className="mt-2 text-xs text-muted-foreground">
             {item.direction === "send" ? t("maskedSent") : ""}{" "}
             {new Date(item.at).toLocaleTimeString()}
           </p>

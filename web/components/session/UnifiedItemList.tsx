@@ -29,8 +29,8 @@ export function UnifiedItemList({
 
   if (items.length === 0) {
     return (
-      <div className="flex flex-1 items-center justify-center rounded-xl border border-dashed border-border p-12 text-center">
-        <p className="font-mono text-sm text-muted-foreground">
+      <div className="flex flex-1 items-center justify-center rounded-xl border border-dashed border-border/40 p-16 text-center">
+        <p className="text-sm text-muted-foreground">
           {peerOnline ? t("ready") : t("waiting")}
         </p>
       </div>

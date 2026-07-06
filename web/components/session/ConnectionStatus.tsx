@@ -38,7 +38,7 @@ export function ConnectionStatus() {
       />
       <Badge variant={variant}>{label}</Badge>
       {!peerOnline && wsConnected && (
-        <span className="font-mono text-xs text-muted-foreground">
+        <span className="text-xs text-muted-foreground">
           {t("peerOffline")}
         </span>
       )}
