@@ -19,7 +19,9 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
     hydrate();
     void fetchConfig().then((config) => {
       usePreferencesStore.getState().hydrate(config.settings.autoAcceptFiles);
-      fetchMe();
+      if (!config.disableAuth) {
+        fetchMe();
+      }
     });
   }, [fetchConfig, fetchMe, hydrate]);
 
@@ -42,7 +44,9 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
           onClick={() => {
             void fetchConfig().then((config) => {
               usePreferencesStore.getState().hydrate(config.settings.autoAcceptFiles);
-              fetchMe();
+              if (!config.disableAuth) {
+                fetchMe();
+              }
             });
           }}
         >

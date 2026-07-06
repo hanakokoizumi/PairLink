@@ -56,18 +56,23 @@ export class SignalingClient {
   private shouldReconnect = true;
   private joinPayload: WsEnvelope | null = null;
   private token?: string;
+  private connectGeneration = 0;
 
   constructor(token?: string) {
     this.token = token;
   }
 
   connect(): Promise<void> {
+    const generation = ++this.connectGeneration;
     return new Promise((resolve, reject) => {
       this.shouldReconnect = true;
       const socket = new WebSocket(wsUrl());
       this.ws = socket;
 
+      const stale = () => generation !== this.connectGeneration;
+
       socket.onopen = () => {
+        if (stale()) return;
         this.reconnectAttempt = 0;
         if (this.token) {
           this.sendRaw({ type: "auth", payload: { token: this.token } });
@@ -93,6 +98,7 @@ export class SignalingClient {
       };
 
       socket.onclose = () => {
+        if (stale()) return;
         this.dispatch("ws-close", undefined);
         if (this.shouldReconnect && this.reconnectAttempt < RECONNECT_DELAYS.length) {
           const delay = RECONNECT_DELAYS[this.reconnectAttempt]!;
@@ -104,6 +110,7 @@ export class SignalingClient {
       };
 
       socket.onerror = () => {
+        if (stale()) return;
         if (socket.readyState !== WebSocket.OPEN) {
           reject(new Error("ws_connect_failed"));
         }
@@ -112,6 +119,7 @@ export class SignalingClient {
   }
 
   disconnect() {
+    this.connectGeneration++;
     this.shouldReconnect = false;
     this.ws?.close();
     this.ws = null;
