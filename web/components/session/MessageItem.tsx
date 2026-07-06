@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { MarkdownRenderer } from "@/components/session/MarkdownRenderer";
 import type { TransferItem } from "@/lib/stores/transfer-store";
+import { copyToClipboard } from "@/lib/utils";
 
 type MessageItemProps = Extract<TransferItem, { kind: "message" }>;
 
@@ -17,6 +18,7 @@ type Props = {
 
 export function MessageItem({ item, onReveal, onHide }: Props) {
   const t = useTranslations("session");
+  const tRoot = useTranslations();
   const revealed = item.revealed ?? !item.masked;
 
   const showContent = () => {
@@ -28,8 +30,12 @@ export function MessageItem({ item, onReveal, onHide }: Props) {
   };
 
   const copy = async () => {
-    await navigator.clipboard.writeText(item.text);
-    toast.success(t("copyMessage"));
+    const ok = await copyToClipboard(item.text);
+    if (ok) {
+      toast.success(t("copyMessage"));
+    } else {
+      toast.error(tRoot("errors.generic"));
+    }
   };
 
   return (

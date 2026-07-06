@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { copyToClipboard } from "@/lib/utils";
 
 type Props = {
   open: boolean;
@@ -54,8 +55,12 @@ export function ConnectionCard({
   const minutesLeft = useMinutesLeft(expiresAt);
 
   const copy = async (value: string) => {
-    await navigator.clipboard.writeText(value);
-    toast.success(t("common.copied"));
+    const ok = await copyToClipboard(value);
+    if (ok) {
+      toast.success(t("common.copied"));
+    } else {
+      toast.error(t("errors.generic"));
+    }
   };
 
   return (
