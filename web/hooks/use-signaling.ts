@@ -70,6 +70,11 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
   const sessionKeyRef = useRef<SessionKey | null>(null);
   const relayRef = useRef<RelayClient | null>(null);
   const remotePeerIdRef = useRef<string | null>(null);
+  const serverConnectionModeRef = useRef<"webrtc" | "relay">("webrtc");
+  const setupPeerRef = useRef<((rtcConfig: RTCConfiguration) => PeerConnection) | null>(null);
+  const negotiateRef = useRef<
+    ((peer: PeerConnection, isHost: boolean) => Promise<void>) | null
+  >(null);
   const handshakeSentRef = useRef(false);
   const peerLeftTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handlerUnsubsRef = useRef<Array<() => void>>([]);
@@ -152,26 +157,78 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
     }));
   }, [cancelPeerLeftGrace, clearHandlers, clearPeerConnection, roomId, setWsConnected]);
 
-  const switchToRelay = useCallback(() => {
-    if (!config?.wsFallback || !signalingRef.current) return;
-    if (!remotePeerIdRef.current) return;
-    if (!sessionKeyRef.current) return;
-    if (useTransferStore.getState().connectionMode === "relay") return;
-    iceMonitorRef.current?.dispose();
-    iceMonitorRef.current = null;
-    setConnectionMode("relay");
-    addActivity(tRef.current("connection.switchingRelay"), "warn");
-    peerRef.current?.close();
-    peerRef.current = null;
-    setState((s) => ({ ...s, dataChannel: null }));
-    relayRef.current?.dispose();
-    relayRef.current = new RelayClient(
-      signalingRef.current,
-      sessionKeyRef.current,
-      remotePeerIdRef.current ?? "",
-    );
-    setState((s) => ({ ...s, relay: relayRef.current }));
-  }, [addActivity, config?.wsFallback, setConnectionMode]);
+  const switchToRelay = useCallback(
+    (notifyPeer = false) => {
+      if (!config?.wsFallback || !signalingRef.current) return;
+      if (!remotePeerIdRef.current) return;
+      if (!sessionKeyRef.current) return;
+      if (
+        useTransferStore.getState().connectionMode === "relay" &&
+        relayRef.current
+      ) {
+        return;
+      }
+      if (notifyPeer) {
+        signalingRef.current.send("use-relay", {});
+      }
+      serverConnectionModeRef.current = "relay";
+      iceMonitorRef.current?.dispose();
+      iceMonitorRef.current = null;
+      setConnectionMode("relay");
+      addActivity(tRef.current("connection.switchingRelay"), "warn");
+      peerRef.current?.close();
+      peerRef.current = null;
+      setState((s) => ({ ...s, dataChannel: null }));
+      relayRef.current?.dispose();
+      relayRef.current = new RelayClient(
+        signalingRef.current,
+        sessionKeyRef.current,
+        remotePeerIdRef.current ?? "",
+      );
+      setState((s) => ({ ...s, relay: relayRef.current }));
+    },
+    [addActivity, config?.wsFallback, setConnectionMode],
+  );
+
+  const switchToWebRTC = useCallback(
+    (notifyPeer = false) => {
+      if (!config || !isWebRtcSupported() || !signalingRef.current) return;
+      if (!remotePeerIdRef.current) return;
+      if (useTransferStore.getState().connectionMode === "webrtc") return;
+      if (notifyPeer) {
+        signalingRef.current.send("use-webrtc", {});
+      }
+      serverConnectionModeRef.current = "webrtc";
+      iceMonitorRef.current?.dispose();
+      iceMonitorRef.current = null;
+      relayRef.current?.dispose();
+      relayRef.current = null;
+      peerRef.current?.close();
+      peerRef.current = null;
+      setConnectionMode("connecting");
+      addActivity(tRef.current("connection.switchingWebRTC"), "info");
+      setState((s) => ({ ...s, dataChannel: null, relay: null }));
+
+      const setupPeer = setupPeerRef.current;
+      const negotiate = negotiateRef.current;
+      if (!setupPeer) return;
+      const peer = setupPeer(config.rtcConfig);
+      if (role === "host" && negotiate) {
+        void negotiate(peer, true);
+      }
+    },
+    [addActivity, config, role, setConnectionMode],
+  );
+
+  const switchToRelayRef = useRef(switchToRelay);
+  useLayoutEffect(() => {
+    switchToRelayRef.current = switchToRelay;
+  }, [switchToRelay]);
+
+  const switchToWebRTCRef = useRef(switchToWebRTC);
+  useLayoutEffect(() => {
+    switchToWebRTCRef.current = switchToWebRTC;
+  }, [switchToWebRTC]);
 
   useEffect(() => {
     if (!config || !isWebRtcSupported()) return;
@@ -194,7 +251,10 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
         },
         onIceConnectionStateChange: (iceState) => {
           iceMonitorRef.current?.handleState(iceState);
-          if (iceState === "connected" || iceState === "completed") {
+          if (
+            (iceState === "connected" || iceState === "completed") &&
+            serverConnectionModeRef.current === "webrtc"
+          ) {
             setConnectionMode("webrtc");
           }
         },
@@ -207,17 +267,14 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
 
       iceMonitorRef.current = new IceFallbackMonitor({
         timeoutMs: (config.settings.iceTimeoutSec ?? 15) * 1000,
-        onFailed: switchToRelay,
-        onDisconnected: switchToRelay,
+        onFailed: () => switchToRelayRef.current(true),
+        onDisconnected: () => switchToRelayRef.current(true),
       });
 
       return peer;
     };
 
-    const restoredRemote = getRoomRemotePeerId(roomId);
-    if (restoredRemote && !peerRef.current) {
-      setupPeer(config.rtcConfig);
-    }
+    setupPeerRef.current = setupPeer;
 
     const negotiate = async (peer: PeerConnection, isHost: boolean) => {
       if (isHost) {
@@ -230,6 +287,8 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
         }
       }
     };
+
+    negotiateRef.current = negotiate;
 
   void (async () => {
       try {
@@ -258,6 +317,8 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
 
         registerHandler(signaling, "ws-config", (payload) => {
           const wsConfig = payload as WsConfigPayload;
+          serverConnectionModeRef.current =
+            wsConfig.connectionMode === "relay" ? "relay" : "webrtc";
           setPeerId(wsConfig.peerId);
           setState((s) => ({
             ...s,
@@ -265,7 +326,14 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
             role: wsConfig.role,
           }));
 
-          if (!peerRef.current) {
+          if (serverConnectionModeRef.current === "relay") {
+            setConnectionMode("relay");
+          }
+
+          if (
+            serverConnectionModeRef.current === "webrtc" &&
+            !peerRef.current
+          ) {
             setupPeer(config.rtcConfig);
           }
         });
@@ -312,11 +380,13 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
             addActivity("Peer joined");
           }
 
-          if (!peerRef.current) {
-            setupPeer(config.rtcConfig);
-          }
-          if (peerRef.current && role === "host") {
-            void negotiate(peerRef.current, true);
+          if (serverConnectionModeRef.current === "webrtc") {
+            if (!peerRef.current) {
+              setupPeer(config.rtcConfig);
+            }
+            if (peerRef.current && role === "host") {
+              void negotiate(peerRef.current, true);
+            }
           }
           if (keyPairRef.current && !handshakeSentRef.current) {
             signaling.e2eHandshake(
@@ -361,6 +431,14 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
           }
         });
 
+        registerHandler(signaling, "use-relay", () => {
+          switchToRelayRef.current(false);
+        });
+
+        registerHandler(signaling, "use-webrtc", () => {
+          switchToWebRTCRef.current(false);
+        });
+
         registerHandler(signaling, "e2e-handshake", async (payload) => {
           try {
             const { publicKey, from } = payload as { publicKey: string; from?: string };
@@ -381,6 +459,9 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
                 serializePublicKey(keyPairRef.current),
               );
               handshakeSentRef.current = true;
+            }
+            if (serverConnectionModeRef.current === "relay") {
+              switchToRelayRef.current(false);
             }
           } catch {
             addActivity("Encryption handshake failed", "error");
@@ -423,9 +504,13 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
     setPeerId,
     setPeerOnline,
     setWsConnected,
-    switchToRelay,
     token,
   ]);
 
-  return { ...state, leaveSession, switchToRelay };
+  return {
+    ...state,
+    leaveSession,
+    switchToRelay: () => switchToRelay(true),
+    switchToWebRTC: () => switchToWebRTC(true),
+  };
 }

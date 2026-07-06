@@ -9,11 +9,15 @@ import { useRoomStore } from "@/lib/stores/room-store";
 type ConnectionStatusProps = {
   canSwitchToRelay?: boolean;
   onSwitchToRelay?: () => void;
+  canSwitchToWebRTC?: boolean;
+  onSwitchToWebRTC?: () => void;
 };
 
 export function ConnectionStatus({
   canSwitchToRelay = false,
   onSwitchToRelay,
+  canSwitchToWebRTC = false,
+  onSwitchToWebRTC,
 }: ConnectionStatusProps) {
   const t = useTranslations("connection");
   const mode = useTransferStore((s) => s.connectionMode);
@@ -55,6 +59,17 @@ export function ConnectionStatus({
           onClick={onSwitchToRelay}
         >
           {t("switchToRelay")}
+        </Button>
+      )}
+      {canSwitchToWebRTC && onSwitchToWebRTC && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-7 px-2 text-xs"
+          onClick={onSwitchToWebRTC}
+        >
+          {t("switchToWebRTC")}
         </Button>
       )}
       {!peerOnline && wsConnected && (

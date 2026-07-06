@@ -130,7 +130,9 @@
     "expiresIn": "{minutes} 分钟后过期",
     "peerOffline": "对方离线",
     "switchingRelay": "正在切换到中继模式…",
-    "switchToRelay": "切换至中继"
+    "switchToRelay": "切换至中继",
+    "switchingWebRTC": "正在切换至 WebRTC…",
+    "switchToWebRTC": "切换至 WebRTC"
   },
   "theme": {
     "light": "浅色",

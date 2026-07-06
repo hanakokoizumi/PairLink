@@ -187,6 +187,11 @@ function TransferSession({
     wsFallback &&
     signaling.peerOnline &&
     connectionMode !== "relay";
+  const canSwitchToWebRTC =
+    isWebRtcSupported() &&
+    wsFallback &&
+    signaling.peerOnline &&
+    connectionMode === "relay";
 
   const handleLeave = useCallback(() => {
     const transferring = useTransferStore
@@ -215,6 +220,8 @@ function TransferSession({
             <ConnectionStatus
               canSwitchToRelay={canSwitchToRelay}
               onSwitchToRelay={signaling.switchToRelay}
+              canSwitchToWebRTC={canSwitchToWebRTC}
+              onSwitchToWebRTC={signaling.switchToWebRTC}
             />
             <Button
               type="button"

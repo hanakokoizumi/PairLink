@@ -9,6 +9,7 @@ export type WsConfigPayload = {
   role: "host" | "guest";
   wsFallback: boolean;
   maxMessageBytes: number;
+  connectionMode?: "webrtc" | "relay";
 };
 
 export type SignalPayload = {

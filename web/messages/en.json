@@ -130,7 +130,9 @@
     "expiresIn": "Expires in {minutes} min",
     "peerOffline": "Peer offline",
     "switchingRelay": "Switching to relay mode…",
-    "switchToRelay": "Use relay"
+    "switchToRelay": "Use relay",
+    "switchingWebRTC": "Switching to WebRTC…",
+    "switchToWebRTC": "Use WebRTC"
   },
   "theme": {
     "light": "Light",
