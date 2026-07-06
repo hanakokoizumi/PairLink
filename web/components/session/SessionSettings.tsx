@@ -55,15 +55,15 @@ export function SessionSettings() {
   ];
 
   return (
-    <Card className="border-border/80 bg-card/60">
-      <CardHeader className="pb-3">
+    <Card>
+      <CardHeader className="pb-2">
         <CardTitle className="text-sm">{t("session.settings")}</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3">
-        <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+      <CardContent className="space-y-4">
+        <p className="text-xs font-medium text-muted-foreground">
           {t("session.browserPreferences")}
         </p>
-        <div className="flex items-center justify-between gap-3 font-mono text-xs">
+        <div className="flex items-center justify-between gap-3 text-sm">
           <span className="text-muted-foreground">{t("session.autoAccept")}</span>
           <button
             type="button"
@@ -72,37 +72,31 @@ export function SessionSettings() {
             aria-label={t("session.autoAccept")}
             onClick={() => setAutoAcceptFiles(!autoAcceptValue)}
             className={cn(
-              "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full border border-border transition-colors",
+              "relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border border-border/40 transition-all duration-150 active:scale-95",
               autoAcceptValue ? "bg-primary" : "bg-muted",
             )}
           >
             <span
               className={cn(
-                "pointer-events-none block h-4 w-4 rounded-full bg-background shadow transition-transform",
-                autoAcceptValue ? "translate-x-4" : "translate-x-0.5",
+                "pointer-events-none block h-5 w-5 rounded-full bg-background shadow-sm transition-transform duration-150",
+                autoAcceptValue ? "translate-x-5" : "translate-x-0.5",
               )}
             />
           </button>
         </div>
-        <p className="text-xs leading-relaxed text-muted-foreground">
-          {t("session.autoAcceptHint")}
-        </p>
 
-        <p className="pt-2 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+        <p className="text-xs font-medium text-muted-foreground">
           {t("session.serverLimits")}
         </p>
         {serverRows.map((row) => (
           <div
             key={row.label}
-            className="flex items-center justify-between font-mono text-xs"
+            className="flex items-center justify-between text-sm"
           >
             <span className="text-muted-foreground">{row.label}</span>
             <span>{row.value}</span>
           </div>
         ))}
-        <p className="pt-2 text-xs leading-relaxed text-muted-foreground">
-          {t("session.settingsHint")}
-        </p>
       </CardContent>
     </Card>
   );
