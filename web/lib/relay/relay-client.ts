@@ -60,7 +60,7 @@ export class RelayClient {
     );
     const encrypted = await encryptChunk(this.sessionKey, plaintext);
     this.signaling.relayChunk({
-      transferId: type,
+      transferId: `__ctrl__:${type}`,
       seq: this.seq++,
       ciphertext: encrypted.ciphertext,
       iv: encrypted.iv,
