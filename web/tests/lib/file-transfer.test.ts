@@ -3,10 +3,13 @@ import {
   CHUNK_SIZE,
   ACK_EVERY,
   buildChunkFrame,
+  chunkIndexFromOffset,
   computeProgress,
+  inFlightWindowBytes,
   nextChunkOffset,
   parseChunkFrame,
   shouldAck,
+  shouldSendAck,
   validateFileSize,
 } from "@/lib/webrtc/file-transfer";
 
@@ -32,6 +35,23 @@ describe("file-transfer", () => {
   it("determines ack intervals", () => {
     expect(shouldAck(ACK_EVERY)).toBe(true);
     expect(shouldAck(ACK_EVERY + 1)).toBe(false);
+  });
+
+  it("computes chunk index from received bytes", () => {
+    expect(chunkIndexFromOffset(0)).toBe(0);
+    expect(chunkIndexFromOffset(CHUNK_SIZE)).toBe(1);
+    expect(chunkIndexFromOffset(CHUNK_SIZE * ACK_EVERY)).toBe(ACK_EVERY);
+  });
+
+  it("computes in-flight window bytes", () => {
+    expect(inFlightWindowBytes()).toBe(ACK_EVERY * CHUNK_SIZE * 2);
+  });
+
+  it("sends ack on periodic chunks and final chunk", () => {
+    const fileSize = CHUNK_SIZE * ACK_EVERY + 100;
+    expect(shouldSendAck(CHUNK_SIZE * ACK_EVERY, fileSize)).toBe(true);
+    expect(shouldSendAck(CHUNK_SIZE, fileSize)).toBe(false);
+    expect(shouldSendAck(fileSize, fileSize)).toBe(true);
   });
 
   it("round-trips binary chunk frames", () => {

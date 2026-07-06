@@ -9,7 +9,10 @@ import {
   type ChatPayload,
   type FileMetaPayload,
   type FileCancelPayload,
+  type FileAckPayload,
+  inFlightWindowBytes,
   sha256Hex,
+  shouldSendAck,
   validateFileSize,
 } from "@/lib/webrtc/file-transfer";
 import { encryptText, decryptText } from "@/lib/crypto/session";
@@ -68,6 +71,60 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
   const cancelledTransfersRef = useRef(new Set<string>());
   const chunkChains = useRef(new Map<string, Promise<void>>());
   const autoDownloaded = useRef(new Set<string>());
+  const ackedBytesRef = useRef(new Map<string, number>());
+  const ackWaitersRef = useRef(new Map<string, Set<(acked: number) => void>>());
+
+  const getAckedBytes = useCallback((id: string) => {
+    return ackedBytesRef.current.get(id) ?? 0;
+  }, []);
+
+  const notifyAckWaiters = useCallback((id: string, acked: number) => {
+    ackWaitersRef.current.get(id)?.forEach((waiter) => waiter(acked));
+  }, []);
+
+  const waitForAck = useCallback(
+    (id: string, minBytes: number): Promise<void> => {
+      if (
+        getAckedBytes(id) >= minBytes ||
+        cancelledTransfersRef.current.has(id)
+      ) {
+        return Promise.resolve();
+      }
+      return new Promise((resolve) => {
+        const waiter = (acked: number) => {
+          if (
+            acked >= minBytes ||
+            cancelledTransfersRef.current.has(id)
+          ) {
+            ackWaitersRef.current.get(id)?.delete(waiter);
+            resolve();
+          }
+        };
+        if (!ackWaitersRef.current.has(id)) {
+          ackWaitersRef.current.set(id, new Set());
+        }
+        ackWaitersRef.current.get(id)!.add(waiter);
+      });
+    },
+    [getAckedBytes],
+  );
+
+  const waitForSendWindow = useCallback(
+    async (id: string, offset: number) => {
+      const window = inFlightWindowBytes();
+      while (offset - getAckedBytes(id) > window) {
+        if (cancelledTransfersRef.current.has(id)) return;
+        const targetAck = offset - window;
+        await waitForAck(id, targetAck);
+      }
+    },
+    [getAckedBytes, waitForAck],
+  );
+
+  const clearAckState = useCallback((id: string) => {
+    ackedBytesRef.current.delete(id);
+    ackWaitersRef.current.delete(id);
+  }, []);
 
   const triggerRecvDownload = useCallback((id: string) => {
     if (autoDownloaded.current.has(id)) return;
@@ -124,18 +181,21 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
 
       cancelledTransfersRef.current.add(id);
       transferWaiters.current.get(id)?.(false);
+      notifyAckWaiters(id, Number.MAX_SAFE_INTEGER);
       transportSend(signaling, "file-cancel", { id });
       updateItem(id, { status: "interrupted" });
       chunkChains.current.delete(id);
+      clearAckState(id);
       addActivity(`Cancelled ${item.name}`, "warn");
     },
-    [addActivity, signaling, updateItem],
+    [addActivity, clearAckState, notifyAckWaiters, signaling, updateItem],
   );
 
   const handleFileCancel = useCallback(
     (payload: FileCancelPayload) => {
       cancelledTransfersRef.current.add(payload.id);
       transferWaiters.current.get(payload.id)?.(false);
+      notifyAckWaiters(payload.id, Number.MAX_SAFE_INTEGER);
       const item = useTransferStore
         .getState()
         .items.find((i) => i.id === payload.id);
@@ -150,7 +210,49 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
       updateItem(payload.id, { status: "interrupted" });
       addActivity(`Transfer cancelled: ${item.name}`, "warn");
     },
-    [addActivity, updateItem],
+    [addActivity, notifyAckWaiters, updateItem],
+  );
+
+  const handleFileAck = useCallback(
+    (payload: FileAckPayload) => {
+      const item = useTransferStore.getState().items.find((i) => i.id === payload.id);
+      if (!item || item.kind !== "file" || item.direction !== "send") return;
+      const receivedBytes = Math.max(
+        0,
+        Math.min(payload.receivedBytes, item.size),
+      );
+      const prev = ackedBytesRef.current.get(payload.id) ?? 0;
+      if (receivedBytes <= prev) return;
+      ackedBytesRef.current.set(payload.id, receivedBytes);
+      updateProgress(payload.id, receivedBytes, item.size);
+      notifyAckWaiters(payload.id, receivedBytes);
+    },
+    [notifyAckWaiters, updateProgress],
+  );
+
+  const sendFileChunks = useCallback(
+    async (
+      transport: Transport,
+      id: string,
+      file: File,
+      startOffset: number,
+    ): Promise<boolean> => {
+      ackedBytesRef.current.set(id, startOffset);
+      let offset = startOffset;
+      while (offset < file.size) {
+        if (isCancelled(id)) return false;
+        await waitForSendWindow(id, offset);
+        if (isCancelled(id)) return false;
+        const slice = file.slice(offset, offset + CHUNK_SIZE);
+        const buffer = await slice.arrayBuffer();
+        if (isCancelled(id)) return false;
+        await transport.sendBinary(id, offset, buffer);
+        offset += buffer.byteLength;
+      }
+      await waitForAck(id, file.size);
+      return !isCancelled(id);
+    },
+    [isCancelled, waitForAck, waitForSendWindow],
   );
 
   const sendMessage = useCallback(
@@ -249,26 +351,20 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
 
         let offset = 0;
         const sha256 = await sha256Hex(file);
-        while (offset < file.size) {
-          if (isCancelled(id)) break;
-          const slice = file.slice(offset, offset + CHUNK_SIZE);
-          const buffer = await slice.arrayBuffer();
-          if (isCancelled(id)) break;
-          await transport.sendBinary(id, offset, buffer);
-          offset += buffer.byteLength;
-          updateProgress(id, offset, file.size);
-        }
-        if (isCancelled(id)) {
+        const ok = await sendFileChunks(transport, id, file, 0);
+        if (!ok) {
           updateItem(id, { status: "interrupted" });
+          clearAckState(id);
           continue;
         }
         transport.send("file-complete", { id, ...(sha256 ? { sha256 } : {}) });
         cancelledTransfersRef.current.delete(id);
+        clearAckState(id);
         updateItem(id, { status: "done", progress: 100 });
         addActivity(`Sent ${file.name}`);
       }
     },
-    [addActivity, addItem, isCancelled, settings, signaling, t, updateItem, updateProgress, waitForTransferResponse],
+    [addActivity, addItem, clearAckState, isCancelled, sendFileChunks, settings, signaling, t, updateItem, waitForTransferResponse],
   );
 
   const downloadFile = useCallback((id: string) => {
@@ -412,17 +508,10 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
 
       let offset = Math.max(0, Math.min(payload.receivedBytes, item.size));
       updateItem(payload.id, { status: "transferring" });
-      while (offset < item.size) {
-        if (isCancelled(payload.id)) break;
-        const slice = item.file.slice(offset, offset + CHUNK_SIZE);
-        const buffer = await slice.arrayBuffer();
-        if (isCancelled(payload.id)) break;
-        await transport.sendBinary(payload.id, offset, buffer);
-        offset += buffer.byteLength;
-        updateProgress(payload.id, offset, item.size);
-      }
-      if (isCancelled(payload.id)) {
+      const ok = await sendFileChunks(transport, payload.id, item.file, offset);
+      if (!ok) {
         updateItem(payload.id, { status: "interrupted" });
+        clearAckState(payload.id);
         return;
       }
       const sha256 = await sha256Hex(item.file);
@@ -432,10 +521,11 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
       });
       cancelledTransfersRef.current.delete(payload.id);
       chunkChains.current.delete(payload.id);
+      clearAckState(payload.id);
       updateItem(payload.id, { status: "done", progress: 100 });
       addActivity(`Resumed ${item.name}`);
     },
-    [addActivity, isCancelled, signaling, updateItem, updateProgress],
+    [addActivity, clearAckState, isCancelled, sendFileChunks, signaling, updateItem],
   );
 
   const handleFileComplete = useCallback(
@@ -480,24 +570,33 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
         if (offset !== item.receivedBytes) return;
 
         const receivedBytes = offset + payload.byteLength;
-        const existing = await getResumeRecord(transferId);
-        if (existing) {
-          await appendChunk(transferId, payload, receivedBytes);
-        } else {
-          await saveResumeRecord({
-            transferId,
-            roomId,
-            name: item.name,
-            size: item.size,
-            mime: item.mime,
+        updateProgress(transferId, receivedBytes, item.size);
+        if (shouldSendAck(receivedBytes, item.size)) {
+          transportSend(signaling, "file-ack", {
+            id: transferId,
             receivedBytes,
-            chunks: [payload],
-            direction: "recv",
-            updatedAt: Date.now(),
           });
         }
-        updateProgress(transferId, receivedBytes, item.size);
+        const persist = async () => {
+          const existing = await getResumeRecord(transferId);
+          if (existing) {
+            await appendChunk(transferId, payload, receivedBytes);
+          } else {
+            await saveResumeRecord({
+              transferId,
+              roomId,
+              name: item.name,
+              size: item.size,
+              mime: item.mime,
+              receivedBytes,
+              chunks: [payload],
+              direction: "recv",
+              updatedAt: Date.now(),
+            });
+          }
+        };
         if (receivedBytes >= item.size) {
+          await persist();
           const record = await getResumeRecord(transferId);
           if (record) {
             const blob = assembleBlob(record);
@@ -507,6 +606,8 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
             addActivity(`Received ${item.name}`);
             triggerRecvDownload(transferId);
           }
+        } else {
+          void persist();
         }
       };
 
@@ -515,7 +616,7 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
       chunkChains.current.set(transferId, next);
       await next;
     },
-    [addActivity, isCancelled, roomId, triggerRecvDownload, updateItem, updateProgress],
+    [addActivity, isCancelled, roomId, signaling, triggerRecvDownload, updateItem, updateProgress],
   );
 
   return {
@@ -534,6 +635,7 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
     handleTransferResponse,
     handleFileComplete,
     handleFileCancel,
+    handleFileAck,
   };
 }
 

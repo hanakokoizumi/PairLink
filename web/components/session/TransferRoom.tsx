@@ -118,6 +118,9 @@ function TransferSession({
       const offCancel = source.on("file-cancel", (payload) => {
         transfer.handleFileCancel(payload as { id: string });
       });
+      const offAck = source.on("file-ack", (payload) => {
+        transfer.handleFileAck(payload as { id: string; receivedBytes: number });
+      });
       const offBinary = source.onBinary((data) => {
         const parsed = parseBinaryChunk(data);
         if (parsed) {
@@ -133,6 +136,7 @@ function TransferSession({
         offChat();
         offComplete();
         offCancel();
+        offAck();
         offBinary();
       };
     };
@@ -157,6 +161,7 @@ function TransferSession({
     transfer.handleIncomingMeta,
     transfer.handleResumeQuery,
     transfer.handleResumeState,
+    transfer.handleFileAck,
     transfer.handleTransferResponse,
   ]);
 

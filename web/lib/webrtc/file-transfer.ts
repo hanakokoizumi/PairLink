@@ -105,6 +105,21 @@ export function shouldAck(chunkIndex: number): boolean {
   return chunkIndex > 0 && chunkIndex % ACK_EVERY === 0;
 }
 
+export function chunkIndexFromOffset(receivedBytes: number): number {
+  return Math.floor(receivedBytes / CHUNK_SIZE);
+}
+
+export function inFlightWindowBytes(): number {
+  return ACK_EVERY * CHUNK_SIZE * 2;
+}
+
+export function shouldSendAck(receivedBytes: number, fileSize: number): boolean {
+  if (receivedBytes >= fileSize) return true;
+  return shouldAck(chunkIndexFromOffset(receivedBytes));
+}
+
+export const BUFFER_LOW_THRESHOLD = CHUNK_SIZE * 4;
+
 function bytesToHex(bytes: ArrayBuffer): string {
   return Array.from(new Uint8Array(bytes))
     .map((b) => b.toString(16).padStart(2, "0"))

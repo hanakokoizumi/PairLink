@@ -1,3 +1,5 @@
+import { BUFFER_LOW_THRESHOLD } from "@/lib/webrtc/file-transfer";
+
 export type ControlMessage = {
   type: string;
   payload?: unknown;
@@ -13,6 +15,7 @@ export class DataChannelClient {
   constructor(channel: RTCDataChannel) {
     this.channel = channel;
     channel.binaryType = "arraybuffer";
+    channel.bufferedAmountLowThreshold = BUFFER_LOW_THRESHOLD;
     channel.onmessage = (ev) => {
       if (typeof ev.data === "string") {
         try {
@@ -53,13 +56,35 @@ export class DataChannelClient {
     this.channel.send(JSON.stringify({ type, payload }));
   }
 
-  sendBinary(
+  async sendBinary(
     transferId: string,
     offset: number,
     chunk: ArrayBuffer,
-  ) {
+  ): Promise<void> {
     if (this.channel.readyState !== "open") return;
-    this.channel.send(frameBinaryChunk(transferId, offset, chunk));
+    const frame = frameBinaryChunk(transferId, offset, chunk);
+    await this.waitForBufferCapacity(frame.byteLength);
+    if (this.channel.readyState !== "open") return;
+    this.channel.send(frame);
+  }
+
+  private waitForBufferCapacity(appendBytes: number): Promise<void> {
+    const threshold = this.channel.bufferedAmountLowThreshold;
+    if (this.channel.bufferedAmount + appendBytes <= threshold) {
+      return Promise.resolve();
+    }
+    return new Promise((resolve) => {
+      const check = () => {
+        if (
+          this.channel.readyState !== "open" ||
+          this.channel.bufferedAmount + appendBytes <= threshold
+        ) {
+          this.channel.removeEventListener("bufferedamountlow", check);
+          resolve();
+        }
+      };
+      this.channel.addEventListener("bufferedamountlow", check);
+    });
   }
 }
 
