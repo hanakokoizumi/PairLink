@@ -184,14 +184,14 @@ function TransferSession({
   }, [clearTransfer, resetRoom, router, signaling, t]);
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 lg:flex-row">
+    <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-8 px-6 py-10 lg:flex-row">
       <div className="flex min-w-0 flex-1 flex-col gap-4 lg:w-2/3">
-        <div className="flex items-center justify-between border-b border-border pb-4">
+        <div className="flex items-center justify-between border-b border-border/40 pb-4">
           <div>
-            <p className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">
+            <p className="text-xs font-medium text-muted-foreground">
               {t("title")}
             </p>
-            <h1 className="mt-1 font-mono text-xl font-bold">{roomId}</h1>
+            <h1 className="mt-1 font-mono text-lg font-semibold tracking-tight">{roomId}</h1>
           </div>
           <div className="flex items-center gap-3">
             <ConnectionStatus />
@@ -199,7 +199,7 @@ function TransferSession({
               type="button"
               variant="outline"
               size="sm"
-              className="font-mono text-xs"
+              className="text-xs"
               onClick={handleLeave}
             >
               {t("leaveSession")}
