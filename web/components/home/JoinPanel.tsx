@@ -39,6 +39,27 @@ export function JoinPanel() {
     }
   };
 
+  const handlePaste = (index: number, e: React.ClipboardEvent<HTMLInputElement>) => {
+    const pasted = e.clipboardData
+      .getData("text")
+      .replace(/[^A-Za-z0-9]/g, "")
+      .toUpperCase();
+    if (!pasted) return;
+    e.preventDefault();
+    const next = [...chars];
+    let cursor = index;
+    for (const char of pasted) {
+      if (cursor >= codeLength) break;
+      next[cursor] = char;
+      cursor++;
+    }
+    setChars(next);
+    const focusIndex = Math.min(cursor, codeLength - 1);
+    requestAnimationFrame(() => {
+      document.getElementById(`otp-${focusIndex}`)?.focus();
+    });
+  };
+
   const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
     if (e.key === "Backspace" && !chars[index] && index > 0) {
       const el = document.getElementById(`otp-${index - 1}`);
@@ -93,6 +114,7 @@ export function JoinPanel() {
                   maxLength={1}
                   value={char}
                   onChange={(e) => handleChange(index, e.target.value)}
+                  onPaste={(e) => handlePaste(index, e)}
                   onKeyDown={(e) => handleKeyDown(index, e)}
                   className="h-12 w-10 text-center font-mono text-lg tracking-widest uppercase"
                   aria-label={`Character ${index + 1}`}

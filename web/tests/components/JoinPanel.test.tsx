@@ -54,4 +54,21 @@ describe("JoinPanel", () => {
     }
     expect(button).not.toBeDisabled();
   });
+
+  it("fills all cells when pasting a code", async () => {
+    const user = userEvent.setup();
+    render(<JoinPanel />);
+    const inputs = screen.getAllByRole("textbox");
+    await user.click(inputs[0]!);
+    await user.paste("abcde");
+    const button = screen.getByRole("button", { name: "home.joinConnection" });
+    expect(button).not.toBeDisabled();
+    expect(inputs.map((input) => (input as HTMLInputElement).value)).toEqual([
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+    ]);
+  });
 });

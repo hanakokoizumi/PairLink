@@ -28,6 +28,13 @@ export function MessageComposer({ onSend, disabled }: Props) {
     setText("");
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
   return (
     <div className="space-y-3">
       <Tabs defaultValue="write">
@@ -43,6 +50,7 @@ export function MessageComposer({ onSend, disabled }: Props) {
           <Textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
+            onKeyDown={handleKeyDown}
             placeholder={t("sendMessage")}
             disabled={disabled}
           />
