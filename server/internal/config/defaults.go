@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/hanakokoizumi/pairlink/server/internal/clientip"
 )
@@ -34,6 +35,13 @@ func ApplyDefaults(cfg *Config) error {
 			port = 8080
 		}
 		cfg.PublicURL = fmt.Sprintf("http://localhost:%d", port)
+	}
+
+	if strings.TrimSpace(cfg.STUNServers) == "" {
+		cfg.STUNServers = DefaultSTUNServers
+	}
+	if err := cfg.FinalizeRTCConfig(); err != nil {
+		return err
 	}
 
 	if _, err := cfg.ParsedRTCConfig(); err != nil {

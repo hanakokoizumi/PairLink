@@ -32,7 +32,8 @@ type Config struct {
 	OIDCGroupsClaim          string `envconfig:"OIDC_GROUPS_CLAIM" default:"groups"`
 	OIDCRequireEmailVerified bool   `envconfig:"OIDC_REQUIRE_EMAIL_VERIFIED" default:"false"`
 
-	RTCConfigJSON string `envconfig:"RTC_CONFIG" default:"{\"iceServers\":[{\"urls\":\"stun:stun.l.google.com:19302\"}]}"`
+	RTCConfigJSON string `envconfig:"RTC_CONFIG" default:"{\"iceServers\":[]}"`
+	STUNServers   string `envconfig:"STUN_SERVERS"`
 	WSFallback    bool   `envconfig:"WS_FALLBACK" default:"true"`
 	ICETimeoutSec int    `envconfig:"ICE_TIMEOUT_SEC" default:"15"`
 
@@ -129,15 +130,6 @@ func (c *Config) HasOIDCAllowRules() bool {
 	return len(ParseAllowList(c.OIDCAllowEmailDomains)) > 0 ||
 		len(ParseAllowList(c.OIDCAllowEmails)) > 0 ||
 		len(ParseAllowList(c.OIDCAllowGroups)) > 0
-}
-
-// ParsedRTCConfig validates and returns RTC_CONFIG JSON.
-func (c *Config) ParsedRTCConfig() (json.RawMessage, error) {
-	var v any
-	if err := json.Unmarshal([]byte(c.RTCConfigJSON), &v); err != nil {
-		return nil, fmt.Errorf("invalid RTC_CONFIG: %w", err)
-	}
-	return json.RawMessage(c.RTCConfigJSON), nil
 }
 
 // ToPublicConfig maps to the public API response.
