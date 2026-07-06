@@ -2,6 +2,11 @@
 set -e
 
 API_PORT="${PAIRLINK_API_PORT:-8081}"
+if [ "$API_PORT" != "8081" ]; then
+  echo "pairlink: PAIRLINK_API_PORT must be 8081 for the prebuilt image (or rebuild with matching INTERNAL_API_URL)" >&2
+  exit 1
+fi
+
 PORT="$API_PORT" /app/pairlink &
 GO_PID=$!
 

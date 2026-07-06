@@ -35,4 +35,4 @@ test-server:
 	cd server && go test ./... -race -count=1
 
 test-web:
-	cd web && pnpm test run
+	cd web && pnpm test:run
