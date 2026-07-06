@@ -28,6 +28,7 @@
     "roomId": "房間 ID",
     "roomCode": "連線碼",
     "waiting": "等待對方連線…",
+    "ready": "連線已就緒",
     "connected": "已連線",
     "disconnected": "已中斷",
     "files": "檔案",

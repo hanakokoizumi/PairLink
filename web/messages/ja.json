@@ -28,6 +28,7 @@
     "roomId": "ルーム ID",
     "roomCode": "接続コード",
     "waiting": "相手の接続を待っています…",
+    "ready": "接続の準備ができました",
     "connected": "接続済み",
     "disconnected": "切断されました",
     "files": "ファイル",

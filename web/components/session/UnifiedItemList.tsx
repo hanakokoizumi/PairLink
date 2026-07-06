@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { FileItem } from "@/components/session/FileItem";
 import { MessageItem } from "@/components/session/MessageItem";
+import { useRoomStore } from "@/lib/stores/room-store";
 import { useTransferStore } from "@/lib/stores/transfer-store";
 
 type Props = {
@@ -24,11 +25,14 @@ export function UnifiedItemList({
 }: Props) {
   const t = useTranslations("session");
   const items = useTransferStore((s) => s.items);
+  const peerOnline = useRoomStore((s) => s.peerOnline);
 
   if (items.length === 0) {
     return (
       <div className="flex flex-1 items-center justify-center rounded-xl border border-dashed border-border p-12 text-center">
-        <p className="font-mono text-sm text-muted-foreground">{t("waiting")}</p>
+        <p className="font-mono text-sm text-muted-foreground">
+          {peerOnline ? t("ready") : t("waiting")}
+        </p>
       </div>
     );
   }

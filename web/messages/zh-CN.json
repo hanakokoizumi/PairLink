@@ -28,6 +28,7 @@
     "roomId": "房间 ID",
     "roomCode": "连接码",
     "waiting": "等待对方连接…",
+    "ready": "连接已就绪",
     "connected": "已连接",
     "disconnected": "已断开",
     "files": "文件",

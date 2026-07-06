@@ -28,6 +28,7 @@
     "roomId": "Room ID",
     "roomCode": "Connection code",
     "waiting": "Waiting for peer…",
+    "ready": "Connection ready",
     "connected": "Connected",
     "disconnected": "Disconnected",
     "files": "Files",
