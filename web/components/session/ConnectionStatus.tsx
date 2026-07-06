@@ -2,10 +2,19 @@
 
 import { useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { useTransferStore } from "@/lib/stores/transfer-store";
 import { useRoomStore } from "@/lib/stores/room-store";
 
-export function ConnectionStatus() {
+type ConnectionStatusProps = {
+  canSwitchToRelay?: boolean;
+  onSwitchToRelay?: () => void;
+};
+
+export function ConnectionStatus({
+  canSwitchToRelay = false,
+  onSwitchToRelay,
+}: ConnectionStatusProps) {
   const t = useTranslations("connection");
   const mode = useTransferStore((s) => s.connectionMode);
   const peerOnline = useRoomStore((s) => s.peerOnline);
@@ -37,6 +46,17 @@ export function ConnectionStatus() {
         }`}
       />
       <Badge variant={variant}>{label}</Badge>
+      {canSwitchToRelay && onSwitchToRelay && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-7 px-2 text-xs"
+          onClick={onSwitchToRelay}
+        >
+          {t("switchToRelay")}
+        </Button>
+      )}
       {!peerOnline && wsConnected && (
         <span className="text-xs text-muted-foreground">
           {t("peerOffline")}

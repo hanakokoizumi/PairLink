@@ -111,6 +111,7 @@
     "accept": "수락",
     "reject": "거부",
     "resume": "이어받기",
+    "cancel": "중단",
     "interrupted": "중단됨",
     "resuming": "이어받기 중"
   },
@@ -128,7 +129,8 @@
     "enterSession": "세션 참가",
     "expiresIn": "{minutes}분 후 만료",
     "peerOffline": "상대방 오프라인",
-    "switchingRelay": "릴레이 모드로 전환 중…"
+    "switchingRelay": "릴레이 모드로 전환 중…",
+    "switchToRelay": "릴레이로 전환"
   },
   "theme": {
     "light": "라이트",

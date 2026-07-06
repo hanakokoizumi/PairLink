@@ -19,8 +19,10 @@ import {
   loadPersistedSession,
   type RoomRole,
 } from "@/lib/stores/room-store";
+import { useConfigStore } from "@/lib/stores/config-store";
 import { useTransferStore } from "@/lib/stores/transfer-store";
 import { parseBinaryChunk } from "@/lib/webrtc/datachannel";
+import { isWebRtcSupported } from "@/lib/webrtc/peer";
 import type { ChatPayload, FileMetaPayload } from "@/lib/webrtc/file-transfer";
 import { purgeExpiredRecords } from "@/lib/storage/resume-store";
 
@@ -71,6 +73,7 @@ function TransferSession({
   const connectionMode = useTransferStore((s) => s.connectionMode);
   const revealMessage = useTransferStore((s) => s.revealMessage);
   const hideMessage = useTransferStore((s) => s.hideMessage);
+  const wsFallback = useConfigStore((s) => s.config?.wsFallback ?? false);
 
   useThemeEffect();
 
@@ -112,6 +115,9 @@ function TransferSession({
       const offComplete = source.on("file-complete", (payload) => {
         void transfer.handleFileComplete(payload as { id: string });
       });
+      const offCancel = source.on("file-cancel", (payload) => {
+        transfer.handleFileCancel(payload as { id: string });
+      });
       const offBinary = source.onBinary((data) => {
         const parsed = parseBinaryChunk(data);
         if (parsed) {
@@ -126,6 +132,7 @@ function TransferSession({
         offResumeState();
         offChat();
         offComplete();
+        offCancel();
         offBinary();
       };
     };
@@ -144,6 +151,7 @@ function TransferSession({
     signaling.relay,
     transfer.handleChunk,
     transfer.handleFileComplete,
+    transfer.handleFileCancel,
     transfer.handleIncomingChat,
     transfer.handleIncomingMeta,
     transfer.handleResumeQuery,
@@ -169,6 +177,11 @@ function TransferSession({
   }, []);
 
   const disabled = !signaling.peerOnline;
+  const canSwitchToRelay =
+    isWebRtcSupported() &&
+    wsFallback &&
+    signaling.peerOnline &&
+    connectionMode !== "relay";
 
   const handleLeave = useCallback(() => {
     const transferring = useTransferStore
@@ -194,7 +207,10 @@ function TransferSession({
             <h1 className="mt-1 font-mono text-lg font-semibold tracking-tight">{roomId}</h1>
           </div>
           <div className="flex items-center gap-3">
-            <ConnectionStatus />
+            <ConnectionStatus
+              canSwitchToRelay={canSwitchToRelay}
+              onSwitchToRelay={signaling.switchToRelay}
+            />
             <Button
               type="button"
               variant="outline"
@@ -212,6 +228,7 @@ function TransferSession({
           onReject={transfer.onRejectFile}
           onDownload={transfer.downloadFile}
           onResume={transfer.resumeFile}
+          onCancel={transfer.cancelFile}
           onReveal={revealMessage}
           onHide={hideMessage}
         />

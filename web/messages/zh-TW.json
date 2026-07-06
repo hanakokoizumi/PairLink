@@ -111,6 +111,7 @@
     "accept": "接收",
     "reject": "拒絕",
     "resume": "續傳",
+    "cancel": "中斷",
     "interrupted": "已中斷",
     "resuming": "續傳中"
   },
@@ -128,7 +129,8 @@
     "enterSession": "進入工作階段",
     "expiresIn": "{minutes} 分鐘後過期",
     "peerOffline": "對方離線",
-    "switchingRelay": "正在切換到中繼模式…"
+    "switchingRelay": "正在切換到中繼模式…",
+    "switchToRelay": "切換至中繼"
   },
   "theme": {
     "light": "淺色",

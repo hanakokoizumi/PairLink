@@ -8,6 +8,7 @@ import {
   CHUNK_SIZE,
   type ChatPayload,
   type FileMetaPayload,
+  type FileCancelPayload,
   sha256Hex,
   validateFileSize,
 } from "@/lib/webrtc/file-transfer";
@@ -64,6 +65,7 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
   const transferWaiters = useRef(
     new Map<string, (accepted: boolean) => void>(),
   );
+  const cancelledTransfersRef = useRef(new Set<string>());
   const chunkChains = useRef(new Map<string, Promise<void>>());
   const autoDownloaded = useRef(new Set<string>());
 
@@ -101,6 +103,53 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
       transferWaiters.current.get(payload.id)?.(payload.accepted);
     },
     [],
+  );
+
+  const isCancelled = useCallback(
+    (id: string) => cancelledTransfersRef.current.has(id),
+    [],
+  );
+
+  const cancelFile = useCallback(
+    (id: string) => {
+      const item = useTransferStore.getState().items.find((i) => i.id === id);
+      if (!item || item.kind !== "file") return;
+      if (
+        item.status !== "transferring" &&
+        item.status !== "resuming" &&
+        item.status !== "awaiting_accept"
+      ) {
+        return;
+      }
+
+      cancelledTransfersRef.current.add(id);
+      transferWaiters.current.get(id)?.(false);
+      transportSend(signaling, "file-cancel", { id });
+      updateItem(id, { status: "interrupted" });
+      addActivity(`Cancelled ${item.name}`, "warn");
+    },
+    [addActivity, signaling, updateItem],
+  );
+
+  const handleFileCancel = useCallback(
+    (payload: FileCancelPayload) => {
+      cancelledTransfersRef.current.add(payload.id);
+      transferWaiters.current.get(payload.id)?.(false);
+      const item = useTransferStore
+        .getState()
+        .items.find((i) => i.id === payload.id);
+      if (!item || item.kind !== "file") return;
+      if (
+        item.status === "done" ||
+        item.status === "rejected" ||
+        item.status === "interrupted"
+      ) {
+        return;
+      }
+      updateItem(payload.id, { status: "interrupted" });
+      addActivity(`Transfer cancelled: ${item.name}`, "warn");
+    },
+    [addActivity, updateItem],
   );
 
   const sendMessage = useCallback(
@@ -187,27 +236,38 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
         transport.send("file-meta", meta);
 
         const accepted = await waitForTransferResponse(id);
-        if (!accepted) {
-          updateItem(id, { status: "rejected" });
-          addActivity(`Transfer declined: ${file.name}`, "warn");
+        if (!accepted || isCancelled(id)) {
+          updateItem(id, {
+            status: isCancelled(id) ? "interrupted" : "rejected",
+          });
+          if (!isCancelled(id)) {
+            addActivity(`Transfer declined: ${file.name}`, "warn");
+          }
           continue;
         }
 
         let offset = 0;
         const sha256 = await sha256Hex(file);
         while (offset < file.size) {
+          if (isCancelled(id)) break;
           const slice = file.slice(offset, offset + CHUNK_SIZE);
           const buffer = await slice.arrayBuffer();
+          if (isCancelled(id)) break;
           await transport.sendBinary(id, offset, buffer);
           offset += buffer.byteLength;
           updateProgress(id, offset, file.size);
         }
+        if (isCancelled(id)) {
+          updateItem(id, { status: "interrupted" });
+          continue;
+        }
         transport.send("file-complete", { id, ...(sha256 ? { sha256 } : {}) });
+        cancelledTransfersRef.current.delete(id);
         updateItem(id, { status: "done", progress: 100 });
         addActivity(`Sent ${file.name}`);
       }
     },
-    [addActivity, addItem, settings, signaling, t, updateItem, updateProgress, waitForTransferResponse],
+    [addActivity, addItem, isCancelled, settings, signaling, t, updateItem, updateProgress, waitForTransferResponse],
   );
 
   const downloadFile = useCallback((id: string) => {
@@ -227,6 +287,7 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
       if (!item || item.kind !== "file") return;
       const transport = getTransport(signaling);
       if (!transport) return;
+      cancelledTransfersRef.current.delete(id);
       transport.send("file-resume-query", { id });
       updateItem(id, { status: "resuming" });
       addActivity(`Resuming ${item.name}`);
@@ -348,17 +409,24 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
       let offset = Math.max(0, Math.min(payload.receivedBytes, item.size));
       updateItem(payload.id, { status: "transferring" });
       while (offset < item.size) {
+        if (isCancelled(payload.id)) break;
         const slice = item.file.slice(offset, offset + CHUNK_SIZE);
         const buffer = await slice.arrayBuffer();
+        if (isCancelled(payload.id)) break;
         await transport.sendBinary(payload.id, offset, buffer);
         offset += buffer.byteLength;
         updateProgress(payload.id, offset, item.size);
       }
+      if (isCancelled(payload.id)) {
+        updateItem(payload.id, { status: "interrupted" });
+        return;
+      }
       transport.send("file-complete", { id: payload.id });
+      cancelledTransfersRef.current.delete(payload.id);
       updateItem(payload.id, { status: "done", progress: 100 });
       addActivity(`Resumed ${item.name}`);
     },
-    [addActivity, signaling, updateItem, updateProgress],
+    [addActivity, isCancelled, signaling, updateItem, updateProgress],
   );
 
   const handleFileComplete = useCallback(
@@ -399,6 +467,7 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
         const item = useTransferStore.getState().items.find((i) => i.id === transferId);
         if (!item || item.kind !== "file") return;
         if (item.status === "awaiting_accept" || item.status === "rejected") return;
+        if (item.status === "interrupted" || isCancelled(transferId)) return;
         if (offset !== item.receivedBytes) return;
 
         const receivedBytes = offset + payload.byteLength;
@@ -436,7 +505,7 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
       chunkChains.current.set(transferId, next);
       await next;
     },
-    [addActivity, roomId, triggerRecvDownload, updateItem, updateProgress],
+    [addActivity, isCancelled, roomId, triggerRecvDownload, updateItem, updateProgress],
   );
 
   return {
@@ -444,6 +513,7 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
     sendFiles,
     downloadFile,
     resumeFile,
+    cancelFile,
     handleIncomingMeta,
     handleIncomingChat,
     onAcceptFile,
@@ -453,6 +523,7 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
     handleResumeState,
     handleTransferResponse,
     handleFileComplete,
+    handleFileCancel,
   };
 }
 

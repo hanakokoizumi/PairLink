@@ -111,6 +111,7 @@
     "accept": "受信",
     "reject": "拒否",
     "resume": "再開",
+    "cancel": "中断",
     "interrupted": "中断",
     "resuming": "再開中"
   },
@@ -128,7 +129,8 @@
     "enterSession": "セッションに入る",
     "expiresIn": "あと {minutes} 分で期限切れ",
     "peerOffline": "相手オフライン",
-    "switchingRelay": "リレーモードに切り替え中…"
+    "switchingRelay": "リレーモードに切り替え中…",
+    "switchToRelay": "リレーに切替"
   },
   "theme": {
     "light": "ライト",

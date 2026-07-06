@@ -11,6 +11,7 @@ type Props = {
   onReject?: (id: string) => void;
   onDownload?: (id: string) => void;
   onResume?: (id: string) => void;
+  onCancel?: (id: string) => void;
   onReveal?: (id: string) => void;
   onHide?: (id: string) => void;
 };
@@ -20,6 +21,7 @@ export function UnifiedItemList({
   onReject,
   onDownload,
   onResume,
+  onCancel,
   onReveal,
   onHide,
 }: Props) {
@@ -48,6 +50,7 @@ export function UnifiedItemList({
             onReject={onReject}
             onDownload={onDownload}
             onResume={onResume}
+            onCancel={onCancel}
           />
         ) : (
           <MessageItem

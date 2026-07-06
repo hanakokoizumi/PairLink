@@ -33,6 +33,10 @@ export type FilesTransferResponse = {
   accepted: boolean;
 };
 
+export type FileCancelPayload = {
+  id: string;
+};
+
 export function encodeControl(type: string, payload?: unknown): string {
   return JSON.stringify({ type, payload });
 }

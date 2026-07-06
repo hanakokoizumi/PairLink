@@ -111,6 +111,7 @@
     "accept": "Accept",
     "reject": "Reject",
     "resume": "Resume",
+    "cancel": "Cancel",
     "interrupted": "Interrupted",
     "resuming": "Resuming"
   },
@@ -128,7 +129,8 @@
     "enterSession": "Enter session",
     "expiresIn": "Expires in {minutes} min",
     "peerOffline": "Peer offline",
-    "switchingRelay": "Switching to relay mode…"
+    "switchingRelay": "Switching to relay mode…",
+    "switchToRelay": "Use relay"
   },
   "theme": {
     "light": "Light",

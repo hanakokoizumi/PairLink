@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { Download, Play } from "lucide-react";
+import { Download, Play, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,7 @@ type Props = {
   onReject?: (id: string) => void;
   onDownload?: (id: string) => void;
   onResume?: (id: string) => void;
+  onCancel?: (id: string) => void;
 };
 
 function formatBytes(bytes: number): string {
@@ -29,6 +30,7 @@ export function FileItem({
   onReject,
   onDownload,
   onResume,
+  onCancel,
 }: Props) {
   const t = useTranslations("file");
 
@@ -75,6 +77,16 @@ export function FileItem({
               {t("reject")}
             </Button>
           </>
+        )}
+        {(item.status === "transferring" || item.status === "resuming") && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => onCancel?.(item.id)}
+          >
+            <X className="mr-1 h-3 w-3" />
+            {t("cancel")}
+          </Button>
         )}
         {item.status === "done" && item.direction === "recv" && (
           <Button size="sm" variant="outline" onClick={() => onDownload?.(item.id)}>
