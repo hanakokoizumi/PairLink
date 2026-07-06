@@ -32,10 +32,10 @@ export function MessageComposer({ onSend, disabled }: Props) {
     <div className="space-y-3">
       <Tabs defaultValue="write">
         <TabsList className="w-full">
-          <TabsTrigger value="write" className="flex-1 font-mono text-xs">
+          <TabsTrigger value="write" className="flex-1 text-xs">
             {t("tabWrite")}
           </TabsTrigger>
-          <TabsTrigger value="preview" className="flex-1 font-mono text-xs">
+          <TabsTrigger value="preview" className="flex-1 text-xs">
             {t("tabPreview")}
           </TabsTrigger>
         </TabsList>
@@ -71,10 +71,8 @@ export function MessageComposer({ onSend, disabled }: Props) {
         </Label>
       </div>
 
-      <p className="text-xs text-muted-foreground">{t("markdownHint")}</p>
-
       <Button
-        className="w-full font-mono"
+        className="w-full"
         onClick={handleSend}
         disabled={disabled || !text.trim()}
       >
