@@ -16,8 +16,8 @@ export type KeyPairBundle = {
   publicKeyJwk: JsonWebKey;
 };
 
-function bufToBase64(buf: ArrayBuffer): string {
-  const bytes = new Uint8Array(buf);
+function bufToBase64(buf: ArrayBuffer | Uint8Array): string {
+  const bytes = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
   let binary = "";
   for (let i = 0; i < bytes.length; i++) {
     binary += String.fromCharCode(bytes[i]!);
@@ -79,8 +79,8 @@ export async function encryptChunk(
     data,
   );
   return {
-    iv: bufToBase64(iv.buffer),
-    ciphertext: bufToBase64(ciphertext),
+    iv: bufToBase64(iv),
+    ciphertext: bufToBase64(new Uint8Array(ciphertext)),
     algo: "aes-gcm",
   };
 }
@@ -90,10 +90,12 @@ export async function decryptChunk(
   iv: string,
   ciphertext: string,
 ): Promise<ArrayBuffer> {
+  const ivBytes = new Uint8Array(base64ToBuf(iv));
+  const cipherBytes = new Uint8Array(base64ToBuf(ciphertext));
   return crypto.subtle.decrypt(
-    { name: "AES-GCM", iv: new Uint8Array(base64ToBuf(iv)) },
+    { name: "AES-GCM", iv: ivBytes },
     key,
-    base64ToBuf(ciphertext),
+    cipherBytes,
   );
 }
 
