@@ -67,7 +67,11 @@
     "invalidPassword": "비밀번호가 올바르지 않습니다",
     "required": "비밀번호가 필요합니다",
     "login": "로그인",
+    "loginSuccess": "로그인되었습니다",
     "loginWithOidc": "OIDC 로그인",
+    "loggedInAs": "{username}(으)로 로그인됨",
+    "logout": "로그아웃",
+    "logoutSuccess": "로그아웃되었습니다",
     "startConnection": "연결 시작"
   },
   "errors": {

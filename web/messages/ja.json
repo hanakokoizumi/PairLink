@@ -67,7 +67,11 @@
     "invalidPassword": "パスワードが無効です",
     "required": "パスワードが必要です",
     "login": "ログイン",
+    "loginSuccess": "ログインしました",
     "loginWithOidc": "OIDC でログイン",
+    "loggedInAs": "{username} としてログイン中",
+    "logout": "ログアウト",
+    "logoutSuccess": "ログアウトしました",
     "startConnection": "接続を開始"
   },
   "errors": {

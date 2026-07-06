@@ -67,7 +67,11 @@
     "invalidPassword": "密碼無效",
     "required": "需要密碼",
     "login": "登入",
+    "loginSuccess": "登入成功",
     "loginWithOidc": "OIDC 登入",
+    "loggedInAs": "已登入為 {username}",
+    "logout": "登出",
+    "logoutSuccess": "已登出",
     "startConnection": "啟動連線"
   },
   "errors": {

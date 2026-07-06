@@ -67,7 +67,11 @@
     "invalidPassword": "Invalid password",
     "required": "Password required",
     "login": "Sign in",
+    "loginSuccess": "Signed in",
     "loginWithOidc": "Sign in with OIDC",
+    "loggedInAs": "Signed in as {username}",
+    "logout": "Sign out",
+    "logoutSuccess": "Signed out",
     "startConnection": "Start connection"
   },
   "errors": {
