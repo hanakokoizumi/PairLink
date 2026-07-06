@@ -23,13 +23,13 @@ export function AppHeader() {
   const t = useTranslations("common");
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border/60 bg-background/80 backdrop-blur-md">
-      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
-        <Link href="/" className="group flex items-center gap-2">
-          <span className="flex h-8 w-8 items-center justify-center rounded-md border border-primary/40 bg-primary/10 text-primary shadow-[0_0_12px_var(--glow)]">
+    <header className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-md">
+      <div className="mx-auto flex h-12 max-w-6xl items-center justify-between px-4 sm:px-6">
+        <Link href="/" className="group flex items-center gap-2 rounded-md transition-colors hover:opacity-80 active:scale-[0.98]">
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-primary/20 bg-primary/5 text-primary">
             <Link2 className="h-4 w-4" />
           </span>
-          <span className="font-mono text-sm font-semibold tracking-tight text-foreground group-hover:text-primary transition-colors">
+          <span className="text-sm font-semibold tracking-tight text-foreground group-hover:text-primary">
             {t("appName")}
           </span>
         </Link>
@@ -39,7 +39,7 @@ export function AppHeader() {
             href="https://github.com/hanakokoizumi/PairLink"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-card text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border/40 bg-card/60 text-muted-foreground transition-all duration-150 hover:bg-muted/50 hover:text-foreground active:scale-95"
             aria-label="GitHub"
           >
             <GitHubIcon className="h-4 w-4" />

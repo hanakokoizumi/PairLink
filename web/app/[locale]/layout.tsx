@@ -72,7 +72,7 @@ export default async function LocaleLayout({ children, params }: Props) {
               theme="dark"
               position="bottom-right"
               toastOptions={{
-                className: "font-mono text-sm border border-border bg-card",
+                className: "text-sm border border-border/40 bg-card/90 backdrop-blur-sm",
               }}
             />
           </NextIntlClientProvider>
