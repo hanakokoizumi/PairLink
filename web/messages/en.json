@@ -55,6 +55,7 @@
     "tabPreview": "Preview",
     "markdownHint": "Markdown supported",
     "leaveWarning": "A transfer is in progress. Leave anyway?",
+    "leaveSession": "End session",
     "sendMessage": "Send message",
     "maskMessage": "Mask message"
   },

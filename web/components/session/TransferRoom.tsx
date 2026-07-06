@@ -1,14 +1,16 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
+import { useRouter } from "@/i18n/routing";
 import { ConnectionStatus } from "@/components/session/ConnectionStatus";
 import { SessionSettings } from "@/components/session/SessionSettings";
 import { FileSendBar } from "@/components/session/FileSendBar";
 import { MessageComposer } from "@/components/session/MessageComposer";
 import { UnifiedItemList } from "@/components/session/UnifiedItemList";
 import { ActivityLog } from "@/components/session/ActivityLog";
+import { Button } from "@/components/ui/button";
 import { useSignaling } from "@/hooks/use-signaling";
 import { useTransfer } from "@/hooks/use-transfer";
 import { useThemeEffect } from "@/hooks/use-theme-effect";
@@ -63,6 +65,9 @@ function TransferSession({
   code?: string;
 }) {
   const t = useTranslations("session");
+  const router = useRouter();
+  const resetRoom = useRoomStore((s) => s.reset);
+  const clearTransfer = useTransferStore((s) => s.clear);
   const connectionMode = useTransferStore((s) => s.connectionMode);
   const revealMessage = useTransferStore((s) => s.revealMessage);
   const hideMessage = useTransferStore((s) => s.hideMessage);
@@ -165,6 +170,19 @@ function TransferSession({
 
   const disabled = !signaling.peerOnline;
 
+  const handleLeave = useCallback(() => {
+    const transferring = useTransferStore
+      .getState()
+      .items.some(
+        (i) => i.kind === "file" && i.status === "transferring",
+      );
+    if (transferring && !window.confirm(t("leaveWarning"))) return;
+    signaling.leaveSession();
+    clearTransfer();
+    resetRoom();
+    router.push("/");
+  }, [clearTransfer, resetRoom, router, signaling, t]);
+
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 lg:flex-row">
       <div className="flex min-w-0 flex-1 flex-col gap-4 lg:w-2/3">
@@ -175,7 +193,18 @@ function TransferSession({
             </p>
             <h1 className="mt-1 font-mono text-xl font-bold">{roomId}</h1>
           </div>
-          <ConnectionStatus />
+          <div className="flex items-center gap-3">
+            <ConnectionStatus />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="font-mono text-xs"
+              onClick={handleLeave}
+            >
+              {t("leaveSession")}
+            </Button>
+          </div>
         </div>
 
         <UnifiedItemList

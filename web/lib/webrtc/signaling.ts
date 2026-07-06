@@ -176,6 +176,14 @@ export class SignalingClient {
     this.sendRaw(this.joinPayload);
   }
 
+  leaveRoom() {
+    if (this.ws?.readyState === WebSocket.OPEN) {
+      this.sendRaw({ type: "leave-room" });
+    }
+    this.joinPayload = null;
+    this.disconnect();
+  }
+
   signal(payload: SignalPayload) {
     this.send("signal", payload);
   }

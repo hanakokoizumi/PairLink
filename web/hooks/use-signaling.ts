@@ -61,6 +61,56 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
   const remotePeerIdRef = useRef<string | null>(null);
   const handshakeSentRef = useRef(false);
 
+  const clearPeerConnection = useCallback(
+    (opts?: { notify?: boolean }) => {
+      iceMonitorRef.current?.dispose();
+      iceMonitorRef.current = null;
+      setPeerOnline(false);
+      peerRef.current?.close();
+      peerRef.current = null;
+      relayRef.current?.dispose();
+      relayRef.current = null;
+      remotePeerIdRef.current = null;
+      sessionKeyRef.current = null;
+      handshakeSentRef.current = false;
+      setConnectionMode("connecting");
+      setState((s) => ({
+        ...s,
+        peerOnline: false,
+        dataChannel: null,
+        relay: null,
+        remotePeerId: null,
+        sessionKey: null,
+      }));
+      if (opts?.notify !== false) {
+        addActivity("Peer disconnected", "warn");
+      }
+      for (const item of useTransferStore.getState().items) {
+        if (item.kind === "file" && item.status === "transferring") {
+          useTransferStore.getState().updateItem(item.id, {
+            status: "interrupted",
+          });
+        }
+      }
+    },
+    [addActivity, setConnectionMode, setPeerOnline],
+  );
+
+  const leaveSession = useCallback(() => {
+    signalingRef.current?.leaveRoom();
+    clearPeerConnection({ notify: false });
+    setWsConnected(false);
+    setState((s) => ({
+      ...s,
+      connected: false,
+      peerOnline: false,
+      dataChannel: null,
+      relay: null,
+      remotePeerId: null,
+      sessionKey: null,
+    }));
+  }, [clearPeerConnection, setWsConnected]);
+
   const switchToRelay = useCallback(() => {
     if (!config?.wsFallback || !signalingRef.current) return;
     if (!remotePeerIdRef.current) return;
@@ -195,32 +245,7 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
         });
 
         signaling.on("peer-left", () => {
-          iceMonitorRef.current?.dispose();
-          iceMonitorRef.current = null;
-          setPeerOnline(false);
-          peerRef.current?.close();
-          peerRef.current = null;
-          relayRef.current?.dispose();
-          relayRef.current = null;
-          remotePeerIdRef.current = null;
-          sessionKeyRef.current = null;
-          handshakeSentRef.current = false;
-          setState((s) => ({
-            ...s,
-            peerOnline: false,
-            dataChannel: null,
-            relay: null,
-            remotePeerId: null,
-            sessionKey: null,
-          }));
-          addActivity("Peer disconnected", "warn");
-          for (const item of useTransferStore.getState().items) {
-            if (item.kind === "file" && item.status === "transferring") {
-              useTransferStore.getState().updateItem(item.id, {
-                status: "interrupted",
-              });
-            }
-          }
+          clearPeerConnection();
         });
 
         signaling.on("signal", async (payload) => {
@@ -287,17 +312,13 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
 
     return () => {
       disposed = true;
-      iceMonitorRef.current?.dispose();
-      peerRef.current?.close();
-      peerRef.current = null;
-      relayRef.current?.dispose();
-      relayRef.current = null;
-      handshakeSentRef.current = false;
-      signaling.disconnect();
+      signaling.leaveRoom();
+      clearPeerConnection({ notify: false });
       setWsConnected(false);
     };
   }, [
     addActivity,
+    clearPeerConnection,
     code,
     config,
     role,
@@ -311,5 +332,5 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
     t,
   ]);
 
-  return state;
+  return { ...state, leaveSession };
 }

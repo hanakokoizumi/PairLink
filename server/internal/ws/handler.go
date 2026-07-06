@@ -109,6 +109,8 @@ func (h *Handler) handleMessage(c *Client, env Envelope) error {
 		err = h.handleHostJoin(c, env.Payload)
 	case "join-room":
 		err = h.handleJoinRoom(c, env.Payload)
+	case "leave-room":
+		err = h.handleLeaveRoom(c)
 	case "signal":
 		err = h.forwardEnvelope(c, env)
 	case "e2e-handshake":
@@ -147,19 +149,35 @@ func wsErrorCode(err error) string {
 func (h *Handler) leaveOtherRoom(c *Client, targetRoomID string) {
 	if existingRoom, _, ok := h.rooms.GetRoomByConnID(c.ConnID()); ok {
 		if existingRoom.ID != targetRoomID {
-			if r, peer, removed := h.rooms.RemovePeer(c.ConnID()); removed {
-				payload, _ := json.Marshal(Envelope{
-					Type: "peer-left",
-					Payload: PeerLeftPayload{
-						PeerID: peer.ID,
-						Role:   string(peer.Role),
-					},
-				})
-				h.hub.BroadcastToRoom(r.ID, payload, c.ConnID())
-			}
-			c.SetPeer("", "", "")
+			h.removePeerAndNotify(c)
 		}
 	}
+}
+
+func (h *Handler) removePeerAndNotify(c *Client) bool {
+	r, peer, ok := h.rooms.GetRoomByConnID(c.ConnID())
+	if !ok {
+		return false
+	}
+	if _, _, removed := h.rooms.RemovePeer(c.ConnID()); removed {
+		payload, _ := json.Marshal(Envelope{
+			Type: "peer-left",
+			Payload: PeerLeftPayload{
+				PeerID: peer.ID,
+				Role:   string(peer.Role),
+			},
+		})
+		h.hub.BroadcastToRoom(r.ID, payload, c.ConnID())
+	}
+	c.SetPeer("", "", "")
+	return true
+}
+
+func (h *Handler) handleLeaveRoom(c *Client) error {
+	if !h.removePeerAndNotify(c) {
+		return nil
+	}
+	return c.SendJSON(Envelope{Type: "left-room"})
 }
 
 func (h *Handler) handleAuth(c *Client, payload any) error {

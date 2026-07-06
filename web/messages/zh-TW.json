@@ -55,6 +55,7 @@
     "tabPreview": "預覽",
     "markdownHint": "支援 Markdown",
     "leaveWarning": "傳輸進行中，確定離開？",
+    "leaveSession": "解散連線",
     "sendMessage": "傳送訊息",
     "maskMessage": "遮罩傳送"
   },

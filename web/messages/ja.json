@@ -55,6 +55,7 @@
     "tabPreview": "プレビュー",
     "markdownHint": "Markdown 対応",
     "leaveWarning": "転送中です。離れますか？",
+    "leaveSession": "接続を終了",
     "sendMessage": "メッセージを送信",
     "maskMessage": "マスクして送信"
   },

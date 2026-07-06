@@ -55,6 +55,7 @@
     "tabPreview": "预览",
     "markdownHint": "支持 Markdown",
     "leaveWarning": "传输进行中，确定离开？",
+    "leaveSession": "解散连接",
     "sendMessage": "发送消息",
     "maskMessage": "掩码发送"
   },
