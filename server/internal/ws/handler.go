@@ -115,6 +115,10 @@ func (h *Handler) handleMessage(c *Client, env Envelope) error {
 		err = h.forwardEnvelope(c, env)
 	case "e2e-handshake":
 		err = h.forwardEnvelope(c, env)
+	case "use-relay":
+		err = h.handleUseRelay(c, env)
+	case "use-webrtc":
+		err = h.handleUseWebRTC(c, env)
 	case "chat":
 		err = h.forwardEnvelope(c, env)
 	case "relay-chunk":
@@ -216,6 +220,7 @@ func (h *Handler) sendHostWsConfig(c *Client, r *room.Room, peerID string) error
 			Role:            string(room.RoleHost),
 			WSFallback:      h.cfg.WSFallback,
 			MaxMessageBytes: h.cfg.WSMaxMessageBytes,
+			ConnectionMode:  string(r.ConnectionModeOrDefault()),
 		},
 	}); err != nil {
 		return err
@@ -233,6 +238,7 @@ func (h *Handler) sendGuestWsConfig(c *Client, r *room.Room, peerID string) erro
 			Role:            string(room.RoleGuest),
 			WSFallback:      h.cfg.WSFallback,
 			MaxMessageBytes: h.cfg.WSMaxMessageBytes,
+			ConnectionMode:  string(r.ConnectionModeOrDefault()),
 		},
 	}); err != nil {
 		return err
@@ -443,6 +449,9 @@ func (h *Handler) forwardEnvelope(c *Client, env Envelope) error {
 	}
 
 	payload := env.Payload
+	if payload == nil {
+		payload = map[string]any{}
+	}
 	if m, ok := payload.(map[string]any); ok {
 		m["from"] = peer.ID
 		payload = m
@@ -454,6 +463,9 @@ func (h *Handler) forwardEnvelope(c *Client, env Envelope) error {
 		var m map[string]any
 		if err := json.Unmarshal(raw, &m); err != nil {
 			return err
+		}
+		if m == nil {
+			m = map[string]any{}
 		}
 		m["from"] = peer.ID
 		payload = m
@@ -467,6 +479,23 @@ func (h *Handler) forwardEnvelope(c *Client, env Envelope) error {
 		return fmt.Errorf("peer offline")
 	}
 	return nil
+}
+
+func (h *Handler) handleUseRelay(c *Client, env Envelope) error {
+	return h.setConnectionModeAndForward(c, env, room.ModeRelay)
+}
+
+func (h *Handler) handleUseWebRTC(c *Client, env Envelope) error {
+	return h.setConnectionModeAndForward(c, env, room.ModeWebRTC)
+}
+
+func (h *Handler) setConnectionModeAndForward(c *Client, env Envelope, mode room.ConnectionMode) error {
+	r, _, ok := h.rooms.GetRoomByConnID(c.ConnID())
+	if !ok {
+		return errors.New("not in room")
+	}
+	r.SetConnectionMode(mode)
+	return h.forwardEnvelope(c, env)
 }
 
 func validateChatPayload(payload any, maxLen int) error {

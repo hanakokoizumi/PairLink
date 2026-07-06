@@ -13,6 +13,14 @@ const (
 	RoleGuest PeerRole = "guest"
 )
 
+// ConnectionMode is the transport mode for a room session.
+type ConnectionMode string
+
+const (
+	ModeWebRTC ConnectionMode = "webrtc"
+	ModeRelay  ConnectionMode = "relay"
+)
+
 // Room is an in-memory session identified by ID and join code.
 type Room struct {
 	ID         string
@@ -21,8 +29,9 @@ type Room struct {
 	OwnerID    string
 	CreatedAt  time.Time
 	ExpiresAt  time.Time
-	Peers      map[string]*Peer
-	mu         sync.RWMutex
+	Peers          map[string]*Peer
+	ConnectionMode ConnectionMode
+	mu             sync.RWMutex
 }
 
 // Peer represents a connected participant.
@@ -67,6 +76,23 @@ func (r *Room) HasConnectedHost(excludeConnID string) bool {
 		}
 	}
 	return false
+}
+
+// ConnectionModeOrDefault returns the room transport mode, defaulting to WebRTC.
+func (r *Room) ConnectionModeOrDefault() ConnectionMode {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	if r.ConnectionMode == "" {
+		return ModeWebRTC
+	}
+	return r.ConnectionMode
+}
+
+// SetConnectionMode stores the authoritative transport mode for the room.
+func (r *Room) SetConnectionMode(mode ConnectionMode) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.ConnectionMode = mode
 }
 
 // OtherPeer returns the peer that is not the given peer ID.

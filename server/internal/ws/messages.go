@@ -50,11 +50,12 @@ type SignalPayload struct {
 
 // WSConfigPayload is sent to clients after joining.
 type WSConfigPayload struct {
-	PeerID      string `json:"peerId"`
-	RoomID      string `json:"roomId"`
-	Role        string `json:"role"`
-	WSFallback  bool   `json:"wsFallback"`
-	MaxMessageBytes int `json:"maxMessageBytes"`
+	PeerID          string `json:"peerId"`
+	RoomID          string `json:"roomId"`
+	Role            string `json:"role"`
+	WSFallback      bool   `json:"wsFallback"`
+	MaxMessageBytes int    `json:"maxMessageBytes"`
+	ConnectionMode  string `json:"connectionMode"`
 }
 
 // RelayChunkPayload is opaque ciphertext relayed between peers.
