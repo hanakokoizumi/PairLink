@@ -206,6 +206,10 @@ func (h *Handler) handleHostJoin(c *Client, payload any) error {
 		}
 	}
 
+	if !h.joinLimiter.allow(c.ClientIP()) {
+		return errors.New("rate limited")
+	}
+
 	r, err := h.rooms.FindByID(p.RoomID)
 	if err != nil {
 		return err
