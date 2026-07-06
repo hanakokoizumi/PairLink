@@ -14,8 +14,8 @@
   "home": {
     "title": "파일을 안전하게 전송",
     "subtitle": "P2P 암호화, 클라우드 불필요",
-    "send": "파일 보내기",
-    "receive": "파일 받기",
+    "send": "연결 만들기",
+    "receive": "연결 참가",
     "sendDescription": "방을 만들고 링크 또는 QR 코드 공유",
     "receiveDescription": "연결 코드 입력 또는 QR 코드 스캔",
     "joinConnection": "연결 참가",
@@ -120,6 +120,8 @@
     "webrtc": "WebRTC",
     "relay": "릴레이",
     "sessionReady": "세션 준비 완료",
+    "shareLink": "공유 링크",
+    "enterSession": "세션 참가",
     "expiresIn": "{minutes}분 후 만료",
     "peerOffline": "상대방 오프라인",
     "switchingRelay": "릴레이 모드로 전환 중…"

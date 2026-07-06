@@ -14,11 +14,11 @@
   "home": {
     "title": "安全传输文件",
     "subtitle": "点对点加密，无需云端",
-    "send": "发送文件",
-    "receive": "接收文件",
+    "send": "创建连接",
+    "receive": "进入连接",
     "sendDescription": "创建房间并分享链接或二维码",
     "receiveDescription": "输入房间码或扫描二维码",
-    "joinConnection": "加入连接",
+    "joinConnection": "进入连接",
     "noLoginRequired": "加入无需登录",
     "startConnection": "启动连接"
   },
@@ -120,6 +120,8 @@
     "webrtc": "WebRTC",
     "relay": "中继",
     "sessionReady": "会话已就绪",
+    "shareLink": "分享链接",
+    "enterSession": "进入会话",
     "expiresIn": "{minutes} 分钟后过期",
     "peerOffline": "对方离线",
     "switchingRelay": "正在切换到中继模式…"

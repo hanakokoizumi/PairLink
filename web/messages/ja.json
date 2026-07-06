@@ -14,11 +14,11 @@
   "home": {
     "title": "ファイルを安全に転送",
     "subtitle": "P2P 暗号化、クラウド不要",
-    "send": "ファイルを送信",
-    "receive": "ファイルを受信",
+    "send": "接続を作成",
+    "receive": "接続に入る",
     "sendDescription": "ルームを作成しリンクまたは QR コードを共有",
     "receiveDescription": "接続コードを入力するか QR コードをスキャン",
-    "joinConnection": "接続に参加",
+    "joinConnection": "接続に入る",
     "noLoginRequired": "参加にログインは不要です",
     "startConnection": "接続を開始"
   },
@@ -120,6 +120,8 @@
     "webrtc": "WebRTC",
     "relay": "リレー",
     "sessionReady": "セッション準備完了",
+    "shareLink": "共有リンク",
+    "enterSession": "セッションに入る",
     "expiresIn": "あと {minutes} 分で期限切れ",
     "peerOffline": "相手オフライン",
     "switchingRelay": "リレーモードに切り替え中…"

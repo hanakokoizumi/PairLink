@@ -14,11 +14,11 @@
   "home": {
     "title": "安全傳輸檔案",
     "subtitle": "點對點加密，無需雲端",
-    "send": "傳送檔案",
-    "receive": "接收檔案",
+    "send": "建立連線",
+    "receive": "進入連線",
     "sendDescription": "建立房間並分享連結或 QR 碼",
     "receiveDescription": "輸入房間碼或掃描 QR 碼",
-    "joinConnection": "加入連線",
+    "joinConnection": "進入連線",
     "noLoginRequired": "加入無需登入",
     "startConnection": "啟動連線"
   },
@@ -120,6 +120,8 @@
     "webrtc": "WebRTC",
     "relay": "中繼",
     "sessionReady": "工作階段已就緒",
+    "shareLink": "分享連結",
+    "enterSession": "進入工作階段",
     "expiresIn": "{minutes} 分鐘後過期",
     "peerOffline": "對方離線",
     "switchingRelay": "正在切換到中繼模式…"

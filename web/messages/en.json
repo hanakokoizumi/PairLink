@@ -14,11 +14,11 @@
   "home": {
     "title": "Transfer files securely",
     "subtitle": "Peer-to-peer, encrypted, no cloud required",
-    "send": "Send files",
-    "receive": "Receive files",
+    "send": "Create connection",
+    "receive": "Enter connection",
     "sendDescription": "Create a room and share a link or QR code",
     "receiveDescription": "Enter a room code or scan a QR code",
-    "joinConnection": "Join connection",
+    "joinConnection": "Enter connection",
     "noLoginRequired": "No login required to join",
     "startConnection": "Start connection"
   },
@@ -120,6 +120,8 @@
     "webrtc": "WebRTC",
     "relay": "Relay",
     "sessionReady": "Session ready",
+    "shareLink": "Share link",
+    "enterSession": "Enter session",
     "expiresIn": "Expires in {minutes} min",
     "peerOffline": "Peer offline",
     "switchingRelay": "Switching to relay mode…"
