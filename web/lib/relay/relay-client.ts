@@ -4,7 +4,8 @@ import {
   decryptChunk,
   encryptChunk,
   type EncryptedChunk,
-} from "@/lib/crypto/e2e";
+  type SessionKey,
+} from "@/lib/crypto/session";
 
 function bytesToBase64(bytes: Uint8Array): string {
   let binary = "";
@@ -36,7 +37,7 @@ export class RelayClient {
 
   constructor(
     private signaling: SignalingClient,
-    private sessionKey: CryptoKey | null,
+    private sessionKey: SessionKey | null,
     private peerId: string,
   ) {
     this.relayChunkOff = this.signaling.on("relay-chunk", (payload) => {
@@ -62,7 +63,7 @@ export class RelayClient {
     return () => this.binaryHandlers.delete(handler);
   }
 
-  setSessionKey(key: CryptoKey | null) {
+  setSessionKey(key: SessionKey | null) {
     this.sessionKey = key;
   }
 

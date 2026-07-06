@@ -22,7 +22,7 @@ export type FileCompletePayload = {
 export type ChatPayload = {
   id: string;
   text?: string;
-  textEnc?: { iv: string; ciphertext: string };
+  textEnc?: { iv: string; ciphertext: string; algo?: "aes-gcm" | "aes-cbc" };
   at: number;
   masked?: boolean;
   format?: "markdown";

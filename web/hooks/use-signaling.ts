@@ -11,11 +11,10 @@ import { RelayClient } from "@/lib/relay/relay-client";
 import {
   deriveSessionKey,
   generateKeyPair,
-  importPublicKey,
-  isCryptoAvailable,
-  parsePublicKey,
   serializePublicKey,
-} from "@/lib/crypto/e2e";
+  type KeyExchangePair,
+  type SessionKey,
+} from "@/lib/crypto/session";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { useConfigStore } from "@/lib/stores/config-store";
 import { useRoomStore } from "@/lib/stores/room-store";
@@ -29,7 +28,7 @@ export type SignalingState = {
   role: "host" | "guest" | null;
   peerId: string | null;
   remotePeerId: string | null;
-  sessionKey: CryptoKey | null;
+  sessionKey: SessionKey | null;
 };
 
 export function useSignaling(roomId: string, role: "host" | "guest", code?: string) {
@@ -56,8 +55,8 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
   const signalingRef = useRef<SignalingClient | null>(null);
   const peerRef = useRef<PeerConnection | null>(null);
   const iceMonitorRef = useRef<IceFallbackMonitor | null>(null);
-  const keyPairRef = useRef<Awaited<ReturnType<typeof generateKeyPair>> | null>(null);
-  const sessionKeyRef = useRef<CryptoKey | null>(null);
+  const keyPairRef = useRef<KeyExchangePair | null>(null);
+  const sessionKeyRef = useRef<SessionKey | null>(null);
   const relayRef = useRef<RelayClient | null>(null);
   const remotePeerIdRef = useRef<string | null>(null);
   const handshakeSentRef = useRef(false);
@@ -136,14 +135,7 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
         setWsConnected(true);
         setState((s) => ({ ...s, connected: true }));
 
-        if (isCryptoAvailable()) {
-          keyPairRef.current = await generateKeyPair();
-        } else {
-          addActivity(
-            "Encryption unavailable (use HTTPS or localhost for masked messages)",
-            "warn",
-          );
-        }
+        keyPairRef.current = await generateKeyPair();
 
         signaling.on("ws-config", (payload) => {
           const wsConfig = payload as WsConfigPayload;
@@ -196,7 +188,7 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
           if (keyPairRef.current && !handshakeSentRef.current) {
             signaling.e2eHandshake(
               remoteId,
-              serializePublicKey(keyPairRef.current.publicKeyJwk),
+              serializePublicKey(keyPairRef.current),
             );
             handshakeSentRef.current = true;
           }
@@ -262,10 +254,9 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
             const { publicKey, from } = payload as { publicKey: string; from?: string };
             if (from) remotePeerIdRef.current = from;
             if (!keyPairRef.current || !publicKey) return;
-            const peerKey = await importPublicKey(parsePublicKey(publicKey));
             sessionKeyRef.current = await deriveSessionKey(
-              keyPairRef.current.privateKey,
-              peerKey,
+              keyPairRef.current,
+              publicKey,
             );
             relayRef.current?.setSessionKey(sessionKeyRef.current);
             setState((s) => ({ ...s, sessionKey: sessionKeyRef.current }));
@@ -275,7 +266,7 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
             if (from && keyPairRef.current && !handshakeSentRef.current) {
               signaling.e2eHandshake(
                 from,
-                serializePublicKey(keyPairRef.current.publicKeyJwk),
+                serializePublicKey(keyPairRef.current),
               );
               handshakeSentRef.current = true;
             }

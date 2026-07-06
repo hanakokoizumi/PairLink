@@ -11,7 +11,7 @@ import {
   sha256Hex,
   validateFileSize,
 } from "@/lib/webrtc/file-transfer";
-import { encryptText, decryptText } from "@/lib/crypto/e2e";
+import { encryptText, decryptText } from "@/lib/crypto/session";
 import { sanitizeDownloadFilename } from "@/lib/utils";
 import {
   appendChunk,

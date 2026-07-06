@@ -1,3 +1,7 @@
+import type { EncryptedChunk } from "@/lib/crypto/types";
+
+export type { EncryptedChunk };
+
 const ALGO = { name: "AES-GCM", length: 256 } as const;
 const ECDH = { name: "ECDH", namedCurve: "P-256" } as const;
 
@@ -10,11 +14,6 @@ export type KeyPairBundle = {
   publicKey: CryptoKey;
   privateKey: CryptoKey;
   publicKeyJwk: JsonWebKey;
-};
-
-export type EncryptedChunk = {
-  iv: string;
-  ciphertext: string;
 };
 
 function bufToBase64(buf: ArrayBuffer): string {
@@ -82,6 +81,7 @@ export async function encryptChunk(
   return {
     iv: bufToBase64(iv.buffer),
     ciphertext: bufToBase64(ciphertext),
+    algo: "aes-gcm",
   };
 }
 
