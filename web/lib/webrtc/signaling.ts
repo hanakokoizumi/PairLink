@@ -21,6 +21,7 @@ export type SignalPayload = {
 type Handler = (payload: unknown) => void;
 
 const RECONNECT_DELAYS = [1000, 2000, 4000, 8000, 16000];
+const DEV_API_PORT = "8080";
 
 function wsUrl(): string {
   const base = process.env.NEXT_PUBLIC_API_URL;
@@ -30,14 +31,22 @@ function wsUrl(): string {
     url.pathname = "/ws";
     return url.toString();
   }
-  const proto =
-    typeof window !== "undefined" && window.location.protocol === "https:"
-      ? "wss:"
-      : "ws:";
-  const host =
-    typeof window !== "undefined" ? window.location.host : "localhost:3000";
-  const qs = "";
-  return `${proto}//${host}/ws${qs}`;
+  if (typeof window !== "undefined") {
+    const wsProto =
+      window.location.protocol === "https:" ? "wss:" : "ws:";
+    const { hostname, port } = window.location;
+    // make dev: Next.js rewrites cannot upgrade WebSocket; connect to Go API directly.
+    if (
+      process.env.NODE_ENV === "development" &&
+      port !== "" &&
+      port !== DEV_API_PORT
+    ) {
+      return `${wsProto}//${hostname}:${DEV_API_PORT}/ws`;
+    }
+    const hostPort = port ? `${hostname}:${port}` : hostname;
+    return `${wsProto}//${hostPort}/ws`;
+  }
+  return `ws://localhost:${DEV_API_PORT}/ws`;
 }
 
 export class SignalingClient {
