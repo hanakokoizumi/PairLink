@@ -74,7 +74,15 @@ func originPatterns(publicURL string) []string {
 	publicURL = strings.TrimRight(publicURL, "/")
 	patterns := []string{publicURL}
 	if strings.Contains(publicURL, "localhost") || strings.Contains(publicURL, "127.0.0.1") {
-		patterns = append(patterns, "http://localhost:3000", "http://127.0.0.1:3000")
+		patterns = append(patterns,
+			"http://localhost:3000",
+			"http://127.0.0.1:3000",
+			"http://localhost:*",
+			"http://127.0.0.1:*",
+			"http://192.168.*",
+			"http://10.*",
+			"http://172.*",
+		)
 	}
 	seen := make(map[string]struct{})
 	out := make([]string, 0, len(patterns))
