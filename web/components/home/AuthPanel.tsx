@@ -4,12 +4,12 @@ import { useCallback, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { useRouter } from "@/i18n/routing";
 import { toast } from "sonner";
-import { ArrowUpRight } from "lucide-react";
+import { Link2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { ConnectionCard } from "@/components/home/ConnectionCard";
 import { mapErrorCode } from "@/lib/api";
 import { fadeInUp } from "@/lib/motion";
@@ -83,26 +83,18 @@ export function AuthPanel() {
       variants={fadeInUp}
       initial="hidden"
       animate="visible"
-      className="flex flex-col items-center justify-center border-border p-8 md:border-r md:p-12"
+      className="flex flex-col items-center justify-center border-border/30 px-6 py-10 md:border-r md:px-10 md:py-16"
     >
-      <span className="mb-6 flex h-16 w-16 items-center justify-center rounded-xl border border-primary/40 bg-primary/10 text-primary shadow-[0_0_24px_var(--glow)]">
-        <ArrowUpRight className="h-7 w-7" />
+      <span className="mb-8 flex h-16 w-16 items-center justify-center rounded-xl border border-primary/20 bg-primary/5 text-primary">
+        <Link2 className="h-7 w-7" />
       </span>
-      <h2 className="font-mono text-2xl font-bold tracking-tight">{t("home.send")}</h2>
-      <p className="mt-3 max-w-sm text-center text-sm text-muted-foreground">
-        {t("home.sendDescription")}
-      </p>
+      <h2 className="text-2xl font-semibold tracking-tight">{t("home.send")}</h2>
 
-      <Card className="mt-8 w-full max-w-sm border-border/80 bg-card/80">
-        <CardHeader>
-          <CardTitle className="text-base">
-            {disableAuth ? t("auth.startConnection") : t("auth.login")}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+      <Card className="mt-10 w-full max-w-sm">
+        <CardContent className="pt-5">
           {disableAuth ? (
             <Button
-              className="w-full font-mono"
+              className="w-full"
               onClick={handleStart}
               disabled={starting}
             >
@@ -110,7 +102,7 @@ export function AuthPanel() {
             </Button>
           ) : isAuthenticated() ? (
             <Button
-              className="w-full font-mono"
+              className="w-full"
               onClick={handleStart}
               disabled={starting}
             >
@@ -139,14 +131,14 @@ export function AuthPanel() {
                   required
                 />
               </div>
-              <Button type="submit" className="w-full font-mono" disabled={loading}>
+              <Button type="submit" className="w-full" disabled={loading}>
                 {t("auth.login")}
               </Button>
               {config?.oidcEnabled && (
                 <Button
                   type="button"
                   variant="outline"
-                  className="w-full font-mono"
+                  className="w-full"
                   onClick={() => {
                     window.location.href = "/api/auth/oidc/start";
                   }}
@@ -160,8 +152,8 @@ export function AuthPanel() {
       </Card>
 
       {roomId && (disableAuth || isAuthenticated()) && (
-        <Button variant="outline" className="mt-4 font-mono" onClick={goToSession}>
-          {t("connection.sessionReady")}
+        <Button variant="outline" className="mt-4" onClick={goToSession}>
+          {t("connection.enterSession")}
         </Button>
       )}
 
