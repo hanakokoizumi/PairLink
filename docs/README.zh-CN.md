@@ -11,7 +11,6 @@
   <a href="https://github.com/hanakokoizumi/PairLink/actions/workflows/test.yml"><img src="https://github.com/hanakokoizumi/PairLink/actions/workflows/test.yml/badge.svg" alt="CI" /></a>
   <a href="https://github.com/hanakokoizumi/PairLink/releases"><img src="https://img.shields.io/github/v/release/hanakokoizumi/PairLink" alt="Release" /></a>
   <a href="../LICENSE"><img src="https://img.shields.io/badge/License-MIT-teal.svg" alt="License: MIT" /></a>
-  <a href="https://goreportcard.com/report/github.com/hanakokoizumi/pairlink/server"><img src="https://goreportcard.com/badge/github.com/hanakokoizumi/pairlink/server" alt="Go Report Card" /></a>
   <a href="https://github.com/hanakokoizumi/PairLink/pkgs/container/pairlink"><img src="https://img.shields.io/badge/docker-ghcr.io-blue" alt="Docker" /></a>
 </p>
 
