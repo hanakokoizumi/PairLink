@@ -100,3 +100,14 @@ export function nextChunkOffset(sentBytes: number, fileSize: number): number {
 export function shouldAck(chunkIndex: number): boolean {
   return chunkIndex > 0 && chunkIndex % ACK_EVERY === 0;
 }
+
+function bytesToHex(bytes: ArrayBuffer): string {
+  return Array.from(new Uint8Array(bytes))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+export async function sha256Hex(blob: Blob): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", await blob.arrayBuffer());
+  return bytesToHex(digest);
+}

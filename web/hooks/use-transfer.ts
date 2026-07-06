@@ -8,9 +8,11 @@ import {
   CHUNK_SIZE,
   type ChatPayload,
   type FileMetaPayload,
+  sha256Hex,
   validateFileSize,
 } from "@/lib/webrtc/file-transfer";
 import { encryptText, decryptText } from "@/lib/crypto/e2e";
+import { sanitizeDownloadFilename } from "@/lib/utils";
 import {
   appendChunk,
   assembleBlob,
@@ -75,7 +77,7 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = item.name;
+    a.download = sanitizeDownloadFilename(item.name);
     a.click();
     URL.revokeObjectURL(url);
   }, []);
@@ -192,6 +194,7 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
         }
 
         let offset = 0;
+        const sha256 = await sha256Hex(file);
         while (offset < file.size) {
           const slice = file.slice(offset, offset + CHUNK_SIZE);
           const buffer = await slice.arrayBuffer();
@@ -199,7 +202,7 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
           offset += buffer.byteLength;
           updateProgress(id, offset, file.size);
         }
-        transport.send("file-complete", { id });
+        transport.send("file-complete", { id, sha256 });
         updateItem(id, { status: "done", progress: 100 });
         addActivity(`Sent ${file.name}`);
       }
@@ -213,7 +216,7 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
     const url = URL.createObjectURL(item.blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = item.name;
+    a.download = sanitizeDownloadFilename(item.name);
     a.click();
     URL.revokeObjectURL(url);
   }, []);
@@ -359,9 +362,22 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
   );
 
   const handleFileComplete = useCallback(
-    async (payload: { id: string }) => {
+    async (payload: { id: string; sha256?: string }) => {
       const item = useTransferStore.getState().items.find((i) => i.id === payload.id);
       if (!item || item.kind !== "file") return;
+
+      if (item.blob) {
+        if (payload.sha256) {
+          const actual = await sha256Hex(item.blob);
+          if (actual !== payload.sha256) {
+            addActivity(`Checksum failed: ${item.name}`, "error");
+            updateItem(payload.id, { status: "interrupted" });
+            return;
+          }
+        }
+        if (item.status === "done") return;
+      }
+
       if (item.size !== 0 || item.status === "done") return;
 
       updateItem(payload.id, {
