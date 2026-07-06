@@ -1,10 +1,28 @@
 import type { NextConfig } from "next";
+import { networkInterfaces } from "os";
 import createNextIntlPlugin from "next-intl/plugin";
 
 const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 
+function getAllowedDevOrigins(): string[] {
+  const fromEnv =
+    process.env.ALLOWED_DEV_ORIGINS?.split(",")
+      .map((origin) => origin.trim())
+      .filter(Boolean) ?? [];
+
+  const localIPv4 = Object.values(networkInterfaces())
+    .flatMap((nets) => nets ?? [])
+    .filter((net) => net.family === "IPv4" && !net.internal)
+    .map((net) => net.address);
+
+  return [...new Set([...localIPv4, ...fromEnv])];
+}
+
 const nextConfig: NextConfig = {
   output: "standalone",
+  ...(process.env.NODE_ENV === "development" && {
+    allowedDevOrigins: getAllowedDevOrigins(),
+  }),
   async headers() {
     return [
       {
