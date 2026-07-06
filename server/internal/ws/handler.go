@@ -246,12 +246,18 @@ func (h *Handler) tryIdempotentHostJoin(c *Client, roomID string) (bool, error) 
 	if !ok || existingPeer.ID == "" || existingRoom.ID != roomID {
 		return false, nil
 	}
+	if existingPeer.Role != room.RoleHost {
+		return false, nil
+	}
 	return true, h.sendHostWsConfig(c, existingRoom, existingPeer.ID)
 }
 
 func (h *Handler) tryIdempotentGuestJoin(c *Client, roomID, code string) (bool, error) {
 	existingRoom, existingPeer, ok := h.rooms.GetRoomByConnID(c.ConnID())
 	if !ok || existingPeer.ID == "" {
+		return false, nil
+	}
+	if existingPeer.Role != room.RoleGuest {
 		return false, nil
 	}
 	if roomID != "" && existingRoom.ID == roomID {
@@ -364,6 +370,7 @@ func (h *Handler) handleJoinRoom(c *Client, payload any) error {
 	if p.RoomID == "" && p.Code == "" {
 		return errors.New("missing room identifier")
 	}
+	p.Code = room.NormalizeCode(p.Code)
 
 	if handled, err := h.tryIdempotentGuestJoin(c, p.RoomID, p.Code); handled || err != nil {
 		return err
