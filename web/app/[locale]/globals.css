@@ -1,7 +1,7 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
-/* Geek dark theme — CSS variables */
+/* Apple-inspired theme — CSS variables */
 :root {
   --background: oklch(0.12 0.02 260);
   --foreground: oklch(0.92 0.02 160);
@@ -19,12 +19,15 @@
   --accent-foreground: oklch(0.12 0.02 260);
   --destructive: oklch(0.62 0.22 25);
   --destructive-foreground: oklch(0.98 0.01 25);
-  --border: oklch(0.28 0.04 260);
+  --border: oklch(0.28 0.03 260 / 0.55);
+  --border-subtle: oklch(0.28 0.03 260 / 0.25);
   --input: oklch(0.22 0.03 260);
   --ring: oklch(0.78 0.18 155);
   --glow: oklch(0.78 0.18 155 / 0.35);
   --grid-color: oklch(0.78 0.18 155 / 0.06);
-  --radius: 0.5rem;
+  --shadow-subtle: 0 1px 2px oklch(0 0 0 / 0.06);
+  --shadow-elevated: 0 8px 32px oklch(0 0 0 / 0.12);
+  --radius: 0.75rem;
 }
 
 .light {
@@ -44,11 +47,14 @@
   --accent-foreground: oklch(0.98 0.005 260);
   --destructive: oklch(0.55 0.22 25);
   --destructive-foreground: oklch(0.98 0.01 25);
-  --border: oklch(0.88 0.01 260);
+  --border: oklch(0.88 0.01 260 / 0.7);
+  --border-subtle: oklch(0.88 0.01 260 / 0.4);
   --input: oklch(0.88 0.01 260);
   --ring: oklch(0.45 0.14 155);
   --glow: oklch(0.45 0.14 155 / 0.2);
   --grid-color: oklch(0.45 0.14 155 / 0.08);
+  --shadow-subtle: 0 1px 2px oklch(0 0 0 / 0.04);
+  --shadow-elevated: 0 8px 32px oklch(0 0 0 / 0.08);
 }
 
 @theme inline {
@@ -86,6 +92,25 @@
 body {
   background: var(--background);
   color: var(--foreground);
+}
+
+@layer base {
+  button,
+  a,
+  [role="button"],
+  [role="switch"] {
+    transition-property: color, background-color, border-color, opacity, transform, box-shadow;
+    transition-duration: 150ms;
+    transition-timing-function: ease-out;
+  }
+
+  input,
+  textarea,
+  select {
+    transition-property: color, background-color, border-color, box-shadow;
+    transition-duration: 150ms;
+    transition-timing-function: ease-out;
+  }
 }
 
 ::selection {
