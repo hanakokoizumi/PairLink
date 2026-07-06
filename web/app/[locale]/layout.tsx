@@ -61,7 +61,7 @@ export default async function LocaleLayout({ children, params }: Props) {
       className={`${inter.variable} ${jetbrainsMono.variable} h-full`}
     >
       <body className="min-h-full flex flex-col font-sans antialiased">
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <NextIntlClientProvider messages={messages}>
             <ConfigProvider>
               <GeekBackground />
@@ -69,7 +69,7 @@ export default async function LocaleLayout({ children, params }: Props) {
               <main className="flex flex-1 flex-col">{children}</main>
             </ConfigProvider>
             <Toaster
-              theme="dark"
+              theme="system"
               position="bottom-right"
               toastOptions={{
                 className: "text-sm border border-border/40 bg-card/90 backdrop-blur-sm",

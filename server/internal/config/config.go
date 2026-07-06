@@ -47,7 +47,7 @@ type Config struct {
 
 	AutoAcceptFiles   bool   `envconfig:"AUTO_ACCEPT_FILES" default:"true"`
 	DefaultMaskOnSend bool   `envconfig:"DEFAULT_MASK_ON_SEND" default:"false"`
-	DefaultTheme      string `envconfig:"DEFAULT_THEME" default:"dark"`
+	DefaultTheme      string `envconfig:"DEFAULT_THEME" default:"system"`
 	DefaultLocale     string `envconfig:"DEFAULT_LOCALE" default:"zh-CN"`
 	SupportedLocales  string `envconfig:"SUPPORTED_LOCALES" default:"zh-CN,en,zh-TW,ja,ko"`
 
