@@ -43,7 +43,7 @@ export function LocaleToggle({ className }: { className?: string }) {
     <DropdownMenu>
       <DropdownMenuTrigger
         className={cn(
-          "inline-flex h-9 items-center gap-1.5 rounded-md border border-border bg-card px-2.5 font-mono text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus:outline-none focus:ring-2 focus:ring-ring",
+          "inline-flex h-9 items-center gap-1.5 rounded-md border border-border/40 bg-card/60 px-2.5 text-xs text-muted-foreground transition-all duration-150 hover:bg-muted/50 hover:text-foreground active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
           className,
         )}
         aria-label="Select language"

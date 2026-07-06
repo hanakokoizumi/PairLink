@@ -7,7 +7,7 @@ export function ActivityLog() {
   const activity = useTransferStore((s) => s.activity);
 
   return (
-    <div className="max-h-48 overflow-y-auto rounded-lg border border-border bg-card/40 p-3 font-mono text-xs">
+    <div className="max-h-48 overflow-y-auto rounded-xl border border-border/40 bg-card/40 p-3 text-xs">
       <AnimatePresence initial={false}>
         {activity.length === 0 ? (
           <p className="text-muted-foreground">&gt; —</p>

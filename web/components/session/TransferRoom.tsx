@@ -45,7 +45,7 @@ export function TransferRoom({ roomId }: Props) {
   if (!role) {
     return (
       <div className="flex flex-1 items-center justify-center p-8 text-center">
-        <p className="font-mono text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground">
           {t("missingSession")}
         </p>
       </div>

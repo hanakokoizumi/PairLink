@@ -42,14 +42,14 @@ export function CodeRedirect({ code }: { code: string }) {
   if (error) {
     return (
       <div className="flex flex-1 items-center justify-center p-8 text-center">
-        <p className="font-mono text-sm text-destructive">{error}</p>
+        <p className="text-sm text-destructive">{error}</p>
       </div>
     );
   }
 
   return (
     <div className="flex flex-1 items-center justify-center p-8">
-      <p className="font-mono text-sm text-muted-foreground">{t("common.loading")}</p>
+      <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
     </div>
   );
 }

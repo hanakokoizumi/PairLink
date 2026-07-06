@@ -24,7 +24,7 @@ export function ThemeToggle({ className }: { className?: string }) {
       <button
         type="button"
         className={cn(
-          "inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-card text-muted-foreground",
+          "inline-flex h-9 w-9 items-center justify-center rounded-md border border-border/40 bg-card/60 text-muted-foreground",
           className,
         )}
         aria-label={t("toggle")}
@@ -45,7 +45,7 @@ export function ThemeToggle({ className }: { className?: string }) {
       type="button"
       onClick={cycle}
       className={cn(
-        "inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-card text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground",
+        "inline-flex h-9 w-9 items-center justify-center rounded-md border border-border/40 bg-card/60 text-muted-foreground transition-all duration-150 hover:bg-muted/50 hover:text-foreground active:scale-95",
         className,
       )}
       aria-label={t("toggle")}

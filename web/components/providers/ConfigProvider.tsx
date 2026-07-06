@@ -28,7 +28,7 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
   if (!loaded) {
     return (
       <div className="flex flex-1 items-center justify-center p-8 text-sm text-muted-foreground">
-        Loading…
+        {t("common.loading")}
       </div>
     );
   }
@@ -40,7 +40,6 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
         <Button
           type="button"
           variant="outline"
-          className="font-mono"
           onClick={() => {
             void fetchConfig().then((config) => {
               usePreferencesStore.getState().hydrate(config.settings.autoAcceptFiles);
