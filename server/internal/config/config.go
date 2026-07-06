@@ -34,6 +34,13 @@ type Config struct {
 
 	RTCConfigJSON string `envconfig:"RTC_CONFIG" default:"{\"iceServers\":[]}"`
 	STUNServers   string `envconfig:"STUN_SERVERS"`
+	TurnEnabled   bool   `envconfig:"TURN_ENABLED" default:"false"`
+	TurnHost      string `envconfig:"TURN_HOST"`
+	TurnPort      int    `envconfig:"TURN_PORT" default:"3478"`
+	TurnRealm     string `envconfig:"TURN_REALM" default:"pairlink"`
+	TurnUser      string `envconfig:"TURN_USER" default:"pairlink"`
+	TurnPassword  string `envconfig:"TURN_PASSWORD"`
+	TurnExternalIP string `envconfig:"TURN_EXTERNAL_IP"`
 	WSFallback    bool   `envconfig:"WS_FALLBACK" default:"true"`
 	ICETimeoutSec int    `envconfig:"ICE_TIMEOUT_SEC" default:"15"`
 

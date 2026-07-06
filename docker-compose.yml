@@ -11,9 +11,13 @@ services:
         required: false
     environment:
       PAIRLINK_LOAD_DOTENV: "false"
+      TURN_ENABLED: ${TURN_ENABLED:-true}
     ports:
       - "${PORT:-8080}:8080"
     restart: unless-stopped
+    depends_on:
+      coturn:
+        condition: service_started
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
       interval: 30s
@@ -21,9 +25,14 @@ services:
       retries: 3
 
   coturn:
-    profiles: ["turn"]
     image: coturn/coturn:4.6.2
     network_mode: host
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      TURN_ENABLED: ${TURN_ENABLED:-true}
     volumes:
-      - ./deploy/coturn/turnserver.conf:/etc/coturn/turnserver.conf:ro
+      - ./deploy/coturn-entrypoint.sh:/usr/local/bin/coturn-entrypoint.sh:ro
+    entrypoint: ["/bin/sh", "/usr/local/bin/coturn-entrypoint.sh"]
     restart: unless-stopped

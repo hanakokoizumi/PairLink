@@ -131,13 +131,14 @@ make docker-up    # docker compose up -d --build
 
 Open **http://localhost:8080** (single port; Go + Next run inside the container).
 
-Optional TURN for strict NAT:
+Optional TURN for strict NAT (bundled coturn, env-driven — no manual config file):
 
 ```bash
-docker compose --profile turn up -d --build
+make setup    # generates TURN_PASSWORD in .env
+docker compose up -d --build
 ```
 
-Configure credentials in `deploy/coturn/turnserver.conf` before enabling the `turn` profile.
+Set `TURN_ENABLED=false` in `.env` to disable the bundled TURN server. See `deploy/coturn/README.md`.
 
 ## Debugging tips
 

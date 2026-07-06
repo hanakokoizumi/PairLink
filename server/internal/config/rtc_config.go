@@ -106,6 +106,11 @@ func (c *Config) FinalizeRTCConfig() error {
 			turnServers = append(turnServers, s)
 		}
 	}
+	if len(turnServers) == 0 {
+		if auto := c.buildAutoTurnIceServer(); auto != nil {
+			turnServers = append(turnServers, *auto)
+		}
+	}
 
 	merged := rtcConfig{
 		IceServers: append(buildStunIceServers(stunURLs), turnServers...),
