@@ -2,9 +2,9 @@
 
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/routing";
+import { PairLinkLogo } from "@/components/brand/PairLinkLogo";
 import { ThemeToggle } from "./ThemeToggle";
 import { LocaleToggle } from "./LocaleToggle";
-import { Link2 } from "lucide-react";
 
 function GitHubIcon({ className }: { className?: string }) {
   return (
@@ -26,9 +26,7 @@ export function AppHeader() {
     <header className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-md">
       <div className="mx-auto flex h-12 max-w-6xl items-center justify-between px-4 sm:px-6">
         <Link href="/" className="group flex items-center gap-2 rounded-md transition-colors hover:opacity-80 active:scale-[0.98]">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-primary/20 bg-primary/5 text-primary">
-            <Link2 className="h-4 w-4" />
-          </span>
+          <PairLinkLogo size={32} />
           <span className="text-sm font-semibold tracking-tight text-foreground group-hover:text-primary">
             {t("appName")}
           </span>

@@ -1,9 +1,13 @@
 import { ImageResponse } from "next/og";
+import { PAIRLINK_ICON } from "@/lib/brand/pairlink-icon";
 
 export const size = { width: 32, height: 32 };
 export const contentType = "image/png";
 
 export default function Icon() {
+  const markSize = Math.round(size.width * PAIRLINK_ICON.markScale);
+  const radius = Math.round(size.width * PAIRLINK_ICON.borderRadiusRatio);
+
   return new ImageResponse(
     (
       <div
@@ -13,23 +17,24 @@ export default function Icon() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#0f1419",
-          borderRadius: 8,
-          border: "2px solid #3ecf8e",
+          background: PAIRLINK_ICON.background,
+          borderRadius: radius,
+          border: `${PAIRLINK_ICON.borderWidth}px solid ${PAIRLINK_ICON.accent}`,
         }}
       >
         <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
+          width={markSize}
+          height={markSize}
+          viewBox={PAIRLINK_ICON.markViewBox}
           fill="none"
-          stroke="#3ecf8e"
-          strokeWidth="2.5"
+          stroke={PAIRLINK_ICON.accent}
+          strokeWidth={PAIRLINK_ICON.strokeWidth}
           strokeLinecap="round"
           strokeLinejoin="round"
         >
-          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+          {PAIRLINK_ICON.linkPaths.map((d) => (
+            <path key={d} d={d} />
+          ))}
         </svg>
       </div>
     ),

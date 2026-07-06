@@ -4,7 +4,7 @@ import { useCallback, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { useRouter } from "@/i18n/routing";
 import { toast } from "sonner";
-import { Link2 } from "lucide-react";
+import { PairLinkLogo } from "@/components/brand/PairLinkLogo";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -96,9 +96,7 @@ export function AuthPanel() {
       animate="visible"
       className="flex flex-col items-center justify-center border-border/30 px-6 py-10 md:border-r md:px-10 md:py-16"
     >
-      <span className="mb-8 flex h-16 w-16 items-center justify-center rounded-xl border border-primary/20 bg-primary/5 text-primary">
-        <Link2 className="h-7 w-7" />
-      </span>
+      <PairLinkLogo size={64} className="mb-8" />
       <h2 className="text-2xl font-semibold tracking-tight">{t("home.send")}</h2>
 
       <Card className="mt-10 w-full max-w-sm">

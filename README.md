@@ -1,4 +1,8 @@
 <p align="center">
+  <img src="docs/assets/icon.svg" alt="PairLink" width="80" height="80" />
+</p>
+
+<p align="center">
   <img src="docs/assets/wordmark.svg" alt="PairLink" width="280" />
 </p>
 
