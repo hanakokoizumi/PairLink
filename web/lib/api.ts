@@ -1,3 +1,5 @@
+import { normalizeRoomCode } from "@/lib/room-code";
+
 export type ApiError = {
   code: string;
   message?: string;
@@ -84,7 +86,7 @@ export async function createRoom(token?: string): Promise<CreateRoomResponse> {
 }
 
 export async function lookupRoom(code: string): Promise<LookupRoomResponse> {
-  const params = new URLSearchParams({ code });
+  const params = new URLSearchParams({ code: normalizeRoomCode(code) });
   const res = await fetch(`${apiBase()}/api/rooms/lookup?${params}`, {
     credentials: "include",
   });

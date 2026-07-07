@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { mapErrorCode } from "@/lib/api";
 import { fadeInUp } from "@/lib/motion";
+import { normalizeRoomCode, normalizeRoomCodeChar } from "@/lib/room-code";
 import { useConfigStore } from "@/lib/stores/config-store";
 import { useRoomStore } from "@/lib/stores/room-store";
 
@@ -26,10 +27,7 @@ export function JoinPanel() {
   const code = useMemo(() => chars.join(""), [chars]);
 
   const handleChange = (index: number, value: string) => {
-    const char = value
-      .replace(/[^A-Za-z0-9]/g, "")
-      .slice(-1)
-      .toUpperCase();
+    const char = normalizeRoomCodeChar(value);
     const next = [...chars];
     next[index] = char;
     setChars(next);
@@ -40,10 +38,7 @@ export function JoinPanel() {
   };
 
   const handlePaste = (index: number, e: React.ClipboardEvent<HTMLInputElement>) => {
-    const pasted = e.clipboardData
-      .getData("text")
-      .replace(/[^A-Za-z0-9]/g, "")
-      .toUpperCase();
+    const pasted = normalizeRoomCode(e.clipboardData.getData("text"));
     if (!pasted) return;
     e.preventDefault();
     const next = [...chars];
