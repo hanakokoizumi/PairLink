@@ -79,10 +79,15 @@ export class DataChannelClient {
           this.channel.readyState !== "open" ||
           this.channel.bufferedAmount + appendBytes <= threshold
         ) {
-          this.channel.removeEventListener("bufferedamountlow", check);
+          cleanup();
           resolve();
         }
       };
+      const cleanup = () => {
+        clearInterval(poll);
+        this.channel.removeEventListener("bufferedamountlow", check);
+      };
+      const poll = setInterval(check, 50);
       this.channel.addEventListener("bufferedamountlow", check);
     });
   }

@@ -34,6 +34,7 @@ export class RelayClient {
   private handlers = new Map<string, Set<(payload: unknown) => void>>();
   private binaryHandlers = new Set<(data: ArrayBuffer) => void>();
   private relayChunkOff?: () => void;
+  private sendChain = Promise.resolve();
 
   constructor(
     private signaling: SignalingClient,
@@ -72,49 +73,59 @@ export class RelayClient {
   }
 
   async send(type: string, payload?: unknown) {
-    const plaintext = new TextEncoder().encode(
-      JSON.stringify({ type, payload }),
-    );
-    if (!this.sessionKey) {
+    await this.enqueueSend(async () => {
+      const plaintext = new TextEncoder().encode(
+        JSON.stringify({ type, payload }),
+      );
+      if (!this.sessionKey) {
+        this.signaling.relayChunk({
+          transferId: `__ctrl__:${type}`,
+          seq: this.seq++,
+          ciphertext: bytesToBase64(new Uint8Array(plaintext)),
+          iv: "",
+          to: this.peerId,
+        });
+        return;
+      }
+      const encrypted = await encryptChunk(this.sessionKey, plaintext);
       this.signaling.relayChunk({
         transferId: `__ctrl__:${type}`,
         seq: this.seq++,
-        ciphertext: bytesToBase64(new Uint8Array(plaintext)),
-        iv: "",
+        ciphertext: encrypted.ciphertext,
+        iv: encrypted.iv,
         to: this.peerId,
       });
-      return;
-    }
-    const encrypted = await encryptChunk(this.sessionKey, plaintext);
-    this.signaling.relayChunk({
-      transferId: `__ctrl__:${type}`,
-      seq: this.seq++,
-      ciphertext: encrypted.ciphertext,
-      iv: encrypted.iv,
-      to: this.peerId,
     });
   }
 
   async sendBinary(transferId: string, offset: number, data: ArrayBuffer) {
-    const framed = frameBinaryChunk(transferId, offset, data);
-    if (!this.sessionKey) {
+    await this.enqueueSend(async () => {
+      const framed = frameBinaryChunk(transferId, offset, data);
+      if (!this.sessionKey) {
+        this.signaling.relayChunk({
+          transferId,
+          seq: this.seq++,
+          ciphertext: bytesToBase64(new Uint8Array(framed)),
+          iv: "",
+          to: this.peerId,
+        });
+        return;
+      }
+      const encrypted = await encryptChunk(this.sessionKey, framed);
       this.signaling.relayChunk({
         transferId,
         seq: this.seq++,
-        ciphertext: bytesToBase64(new Uint8Array(framed)),
-        iv: "",
+        ciphertext: encrypted.ciphertext,
+        iv: encrypted.iv,
         to: this.peerId,
       });
-      return;
-    }
-    const encrypted = await encryptChunk(this.sessionKey, framed);
-    this.signaling.relayChunk({
-      transferId,
-      seq: this.seq++,
-      ciphertext: encrypted.ciphertext,
-      iv: encrypted.iv,
-      to: this.peerId,
     });
+  }
+
+  private enqueueSend(task: () => Promise<void>): Promise<void> {
+    const next = this.sendChain.then(task, task);
+    this.sendChain = next.catch(() => undefined);
+    return next;
   }
 
   private async handleIncoming(

@@ -59,6 +59,11 @@
     "connectionDissolved": "Connection ended",
     "connectionDissolvedHint": "The other party has ended the connection.",
     "connectionDissolvedConfirm": "Back to home",
+    "tabConflictTitle": "Open in another tab",
+    "tabConflictHint": "Only one tab in this browser can host the connection. Switch back to the original tab, or disconnect it and continue here.",
+    "tabConflictUseOriginal": "Use original tab",
+    "tabConflictTakeOver": "Connect in this tab",
+    "tabConflictTransferred": "Connection moved to another tab",
     "sendMessage": "Send message",
     "maskMessage": "Mask message"
   },

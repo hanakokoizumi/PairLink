@@ -59,6 +59,11 @@
     "connectionDissolved": "連線已解散",
     "connectionDissolvedHint": "對方已解散連線。",
     "connectionDissolvedConfirm": "返回首頁",
+    "tabConflictTitle": "已在其他分頁開啟",
+    "tabConflictHint": "同一瀏覽器中只能有一個分頁作為發起方連線。請切換回原來的分頁，或斷開原連線後在此分頁繼續。",
+    "tabConflictUseOriginal": "使用原分頁",
+    "tabConflictTakeOver": "在此分頁連線",
+    "tabConflictTransferred": "連線已移至另一個分頁",
     "sendMessage": "傳送訊息",
     "maskMessage": "遮罩傳送"
   },

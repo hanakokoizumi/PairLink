@@ -28,6 +28,7 @@ import {
 import { useConfigStore } from "@/lib/stores/config-store";
 import { useTransferStore } from "@/lib/stores/transfer-store";
 import { parseBinaryChunk } from "@/lib/webrtc/datachannel";
+import { getActiveTransport } from "@/lib/webrtc/transport";
 import { isWebRtcSupported } from "@/lib/webrtc/peer";
 import type { ChatPayload, FileMetaPayload } from "@/lib/webrtc/file-transfer";
 import { purgeExpiredRecords } from "@/lib/storage/resume-store";
@@ -147,12 +148,7 @@ function TransferSession({
       };
     };
 
-    const activeSource =
-      connectionMode === "relay"
-        ? signaling.relay
-        : signaling.dataChannel?.readyState === "open"
-          ? signaling.dataChannel
-          : signaling.relay ?? signaling.dataChannel;
+    const activeSource = getActiveTransport(signaling, connectionMode);
 
     return attach(activeSource);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- handler fns listed explicitly; not whole transfer object
@@ -239,6 +235,37 @@ function TransferSession({
         <Button type="button" className="w-full" onClick={handlePeerDissolved}>
           {t("connectionDissolvedConfirm")}
         </Button>
+      </DialogContent>
+    </Dialog>
+
+    <Dialog
+      open={signaling.tabConflict}
+      onOpenChange={(open) => {
+        if (!open) signaling.dismissTabConflict();
+      }}
+    >
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>{t("tabConflictTitle")}</DialogTitle>
+        </DialogHeader>
+        <p className="text-sm text-muted-foreground">{t("tabConflictHint")}</p>
+        <div className="flex flex-col gap-2">
+          <Button
+            type="button"
+            className="w-full"
+            onClick={() => void signaling.takeOverConnection()}
+          >
+            {t("tabConflictTakeOver")}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={signaling.dismissTabConflict}
+          >
+            {t("tabConflictUseOriginal")}
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
 

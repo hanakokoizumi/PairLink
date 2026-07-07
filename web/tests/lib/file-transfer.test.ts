@@ -4,8 +4,10 @@ import {
   ACK_EVERY,
   buildChunkFrame,
   chunkIndexFromOffset,
+  chunkSizeForTransport,
   computeProgress,
   inFlightWindowBytes,
+  maxRelayDataChunkBytes,
   nextChunkOffset,
   parseChunkFrame,
   shouldAck,
@@ -62,5 +64,15 @@ describe("file-transfer", () => {
     expect(parsed).not.toBeNull();
     expect(parsed!.offset).toBe(128);
     expect(new Uint8Array(parsed!.payload)).toEqual(new Uint8Array(payload));
+  });
+
+  it("shrinks relay chunks to fit ws max message bytes", () => {
+    expect(maxRelayDataChunkBytes(1_048_576)).toBe(CHUNK_SIZE);
+    expect(maxRelayDataChunkBytes(65_536)).toBeLessThan(CHUNK_SIZE);
+    expect(maxRelayDataChunkBytes(65_536)).toBeGreaterThanOrEqual(4096);
+    expect(chunkSizeForTransport("relay", 65_536)).toBe(
+      maxRelayDataChunkBytes(65_536),
+    );
+    expect(chunkSizeForTransport("webrtc", 65_536)).toBe(CHUNK_SIZE);
   });
 });

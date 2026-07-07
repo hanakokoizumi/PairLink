@@ -59,6 +59,11 @@
     "connectionDissolved": "连接已解散",
     "connectionDissolvedHint": "对方已解散连接。",
     "connectionDissolvedConfirm": "返回首页",
+    "tabConflictTitle": "已在其他标签页打开",
+    "tabConflictHint": "同一浏览器中只能有一个标签页作为发起方连接。请切换回原来的标签页，或断开原连接后在此标签页继续。",
+    "tabConflictUseOriginal": "使用原标签页",
+    "tabConflictTakeOver": "在此标签页连接",
+    "tabConflictTransferred": "连接已移至另一个标签页",
     "sendMessage": "发送消息",
     "maskMessage": "掩码发送"
   },

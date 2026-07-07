@@ -20,12 +20,18 @@ import { useConfigStore } from "@/lib/stores/config-store";
 import { useRoomStore } from "@/lib/stores/room-store";
 import { useTransferStore } from "@/lib/stores/transfer-store";
 import {
+  createRoomTabCoordinator,
+  TAB_TAKEOVER_DELAY_MS,
+  type RoomTabCoordinator,
+} from "@/lib/room-tab-coordinator";
+import {
   acquireRoomSession,
   destroyRoomSession,
   getRoomRemotePeerId,
   releaseRoomSession,
   setRoomRemotePeerId,
 } from "@/lib/webrtc/session-registry";
+import { PEER_LEFT_GRACE_MS } from "@/lib/webrtc/file-transfer";
 
 export type SignalingState = {
   connected: boolean;
@@ -36,6 +42,7 @@ export type SignalingState = {
   peerId: string | null;
   remotePeerId: string | null;
   sessionKey: SessionKey | null;
+  maxMessageBytes: number | null;
 };
 
 export function useSignaling(roomId: string, role: "host" | "guest", code?: string) {
@@ -61,10 +68,15 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
     peerId: null,
     remotePeerId: null,
     sessionKey: null,
+    maxMessageBytes: null,
   });
   const [peerDissolved, setPeerDissolved] = useState(false);
+  const [tabConflict, setTabConflict] = useState(false);
 
   const signalingRef = useRef<SignalingClient | null>(null);
+  const tabCoordinatorRef = useRef<RoomTabCoordinator | null>(null);
+  const sessionJoinedRef = useRef(false);
+  const performJoinRef = useRef<(() => void) | null>(null);
   const peerRef = useRef<PeerConnection | null>(null);
   const iceMonitorRef = useRef<IceFallbackMonitor | null>(null);
   const keyPairRef = useRef<KeyExchangePair | null>(null);
@@ -120,6 +132,7 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
         relay: null,
         remotePeerId: null,
         sessionKey: null,
+        maxMessageBytes: null,
       }));
       if (opts?.notify !== false) {
         addActivity("Peer disconnected", "warn");
@@ -144,9 +157,30 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
     setPeerDissolved(false);
   }, []);
 
+  const disconnectFromRoom = useCallback(
+    (opts?: { notify?: boolean }) => {
+      cancelPeerLeftGrace();
+      sessionJoinedRef.current = false;
+      signalingRef.current?.leaveRoom();
+      clearPeerConnection(opts);
+      setWsConnected(false);
+      setState((s) => ({
+        ...s,
+        connected: false,
+        peerOnline: false,
+        dataChannel: null,
+        relay: null,
+        remotePeerId: null,
+        sessionKey: null,
+        maxMessageBytes: null,
+      }));
+    },
+    [cancelPeerLeftGrace, clearPeerConnection, setWsConnected],
+  );
+
   const leaveSession = useCallback(() => {
-    cancelPeerLeftGrace();
     setPeerDissolved(false);
+    setTabConflict(false);
     clearHandlers();
     destroyRoomSession(roomId);
     signalingRef.current = null;
@@ -161,7 +195,19 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
       remotePeerId: null,
       sessionKey: null,
     }));
-  }, [cancelPeerLeftGrace, clearHandlers, clearPeerConnection, roomId, setWsConnected]);
+  }, [clearHandlers, clearPeerConnection, roomId, setWsConnected]);
+
+  const dismissTabConflict = useCallback(() => {
+    setTabConflict(false);
+  }, []);
+
+  const takeOverConnection = useCallback(async () => {
+    tabCoordinatorRef.current?.requestTakeover();
+    await new Promise((resolve) => setTimeout(resolve, TAB_TAKEOVER_DELAY_MS));
+    sessionJoinedRef.current = false;
+    setTabConflict(false);
+    performJoinRef.current?.();
+  }, []);
 
   const switchToRelay = useCallback(
     (notifyPeer = false) => {
@@ -296,6 +342,26 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
 
     negotiateRef.current = negotiate;
 
+    const tabCoordinator = createRoomTabCoordinator(roomId);
+    tabCoordinatorRef.current = tabCoordinator;
+    tabCoordinator?.setOnTakeover(() => {
+      if (disposed) return;
+      disconnectFromRoom({ notify: false });
+      toast.info(tRef.current("session.tabConflictTransferred"));
+      setTabConflict(false);
+    });
+
+    const joinRoom = () => {
+      if (sessionJoinedRef.current) return;
+      sessionJoinedRef.current = true;
+      if (role === "host") {
+        signaling.hostJoin(roomId, token ?? undefined);
+      } else {
+        signaling.joinRoom({ roomId, code });
+      }
+    };
+    performJoinRef.current = joinRoom;
+
   void (async () => {
       try {
         const knownRemote = getRoomRemotePeerId(roomId);
@@ -330,7 +396,9 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
             ...s,
             peerId: wsConfig.peerId,
             role: wsConfig.role,
+            maxMessageBytes: wsConfig.maxMessageBytes,
           }));
+          tabCoordinatorRef.current?.announce(wsConfig.role);
 
           if (serverConnectionModeRef.current === "relay") {
             setConnectionMode("relay");
@@ -351,6 +419,8 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
               : "join_failed";
           if (code === "rate_limited") {
             toast.error(tRef.current("errors.rateLimited"));
+          } else if (code === "room_full" && role === "host") {
+            setTabConflict(true);
           }
           addActivity(`Connection error: ${code}`, "error");
         });
@@ -412,7 +482,7 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
             if (hadPeer) {
               setPeerDissolved(true);
             }
-          }, 800);
+          }, PEER_LEFT_GRACE_MS);
         });
 
         registerHandler(signaling, "signal", async (payload) => {
@@ -478,14 +548,7 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
           }
         });
 
-        if (!session.joined) {
-          session.joined = true;
-          if (role === "host") {
-            signaling.hostJoin(roomId, token ?? undefined);
-          } else {
-            signaling.joinRoom({ roomId, code });
-          }
-        }
+        joinRoom();
       } catch {
         addActivity("Connection failed", "error");
       }
@@ -493,6 +556,8 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
 
     return () => {
       disposed = true;
+      tabCoordinatorRef.current?.dispose();
+      tabCoordinatorRef.current = null;
       cancelPeerLeftGrace();
       clearHandlers();
       releaseRoomSession(roomId, () => {
@@ -520,7 +585,10 @@ export function useSignaling(roomId: string, role: "host" | "guest", code?: stri
   return {
     ...state,
     peerDissolved,
+    tabConflict,
     dismissPeerDissolved,
+    dismissTabConflict,
+    takeOverConnection,
     leaveSession,
     switchToRelay: () => switchToRelay(true),
     switchToWebRTC: () => switchToWebRTC(true),

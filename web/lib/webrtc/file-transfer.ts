@@ -1,6 +1,36 @@
 export const CHUNK_SIZE = 64 * 1024;
 export const ACK_EVERY = 16;
 
+/** Grace period before treating peer-left as a dissolved session. */
+export const PEER_LEFT_GRACE_MS = 2500;
+
+const RELAY_JSON_OVERHEAD_BYTES = 512;
+const RELAY_FRAME_OVERHEAD_BYTES = 25;
+const RELAY_GCM_TAG_BYTES = 16;
+
+/** Max raw file bytes per relay chunk so the WS JSON frame stays under the server limit. */
+export function maxRelayDataChunkBytes(maxMessageBytes: number): number {
+  if (!Number.isFinite(maxMessageBytes) || maxMessageBytes <= 0) {
+    return CHUNK_SIZE;
+  }
+  const maxCiphertextBytes = Math.floor(
+    (maxMessageBytes - RELAY_JSON_OVERHEAD_BYTES) * 0.75,
+  );
+  const maxPlaintextBytes =
+    maxCiphertextBytes - RELAY_FRAME_OVERHEAD_BYTES - RELAY_GCM_TAG_BYTES;
+  return Math.max(4096, Math.min(CHUNK_SIZE, maxPlaintextBytes));
+}
+
+export function chunkSizeForTransport(
+  connectionMode: "connecting" | "webrtc" | "relay",
+  maxMessageBytes?: number,
+): number {
+  if (connectionMode === "relay" && maxMessageBytes) {
+    return maxRelayDataChunkBytes(maxMessageBytes);
+  }
+  return CHUNK_SIZE;
+}
+
 export type FileMetaPayload = {
   id: string;
   name: string;

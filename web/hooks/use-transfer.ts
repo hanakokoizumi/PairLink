@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import { generateTransferId } from "@/lib/webrtc/datachannel";
 import {
-  CHUNK_SIZE,
+  chunkSizeForTransport,
   type ChatPayload,
   type FileMetaPayload,
   type FileCancelPayload,
@@ -15,6 +15,7 @@ import {
   shouldSendAck,
   validateFileSize,
 } from "@/lib/webrtc/file-transfer";
+import { getActiveTransport } from "@/lib/webrtc/transport";
 import { encryptText, decryptText } from "@/lib/crypto/session";
 import { sanitizeDownloadFilename } from "@/lib/utils";
 import {
@@ -38,22 +39,15 @@ type Transport = {
   ) => void | Promise<void>;
 };
 
-function getTransport(signaling: SignalingState): Transport | null {
-  if (signaling.dataChannel && signaling.dataChannel.readyState === "open") {
-    return {
-      send: (type, payload) => signaling.dataChannel!.send(type, payload),
-      sendBinary: (id, offset, chunk) =>
-        signaling.dataChannel!.sendBinary(id, offset, chunk),
-    };
-  }
-  if (signaling.relay) {
-    return {
-      send: (type, payload) => signaling.relay!.send(type, payload),
-      sendBinary: (id, offset, chunk) =>
-        signaling.relay!.sendBinary(id, offset, chunk),
-    };
-  }
-  return null;
+function getTransport(signaling: SignalingState) {
+  const connectionMode = useTransferStore.getState().connectionMode;
+  const transport = getActiveTransport(signaling, connectionMode);
+  if (!transport) return null;
+  return {
+    send: (type: string, payload?: unknown) => transport.send(type, payload),
+    sendBinary: (id: string, offset: number, chunk: ArrayBuffer) =>
+      transport.sendBinary(id, offset, chunk),
+  } satisfies Transport;
 }
 
 export function useTransfer(signaling: SignalingState, roomId: string) {
@@ -73,6 +67,7 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
   const autoDownloaded = useRef(new Set<string>());
   const ackedBytesRef = useRef(new Map<string, number>());
   const ackWaitersRef = useRef(new Map<string, Set<(acked: number) => void>>());
+  const sendQueueRef = useRef(Promise.resolve());
 
   const getAckedBytes = useCallback((id: string) => {
     return ackedBytesRef.current.get(id) ?? 0;
@@ -237,22 +232,34 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
       file: File,
       startOffset: number,
     ): Promise<boolean> => {
+      const connectionMode = useTransferStore.getState().connectionMode;
+      const chunkSize = chunkSizeForTransport(
+        connectionMode,
+        signaling.maxMessageBytes ?? undefined,
+      );
       ackedBytesRef.current.set(id, startOffset);
       let offset = startOffset;
       while (offset < file.size) {
         if (isCancelled(id)) return false;
         await waitForSendWindow(id, offset);
         if (isCancelled(id)) return false;
-        const slice = file.slice(offset, offset + CHUNK_SIZE);
+        const slice = file.slice(offset, offset + chunkSize);
         const buffer = await slice.arrayBuffer();
         if (isCancelled(id)) return false;
         await transport.sendBinary(id, offset, buffer);
         offset += buffer.byteLength;
+        updateProgress(id, offset, file.size);
       }
       await waitForAck(id, file.size);
       return !isCancelled(id);
     },
-    [isCancelled, waitForAck, waitForSendWindow],
+    [
+      isCancelled,
+      signaling.maxMessageBytes,
+      updateProgress,
+      waitForAck,
+      waitForSendWindow,
+    ],
   );
 
   const sendMessage = useCallback(
@@ -305,64 +312,69 @@ export function useTransfer(signaling: SignalingState, roomId: string) {
   );
 
   const sendFiles = useCallback(
-    async (files: FileList | File[]) => {
-      const transport = getTransport(signaling);
-      if (!transport || !settings) return;
-      const list = Array.from(files);
+    (files: FileList | File[]) => {
+      const run = async () => {
+        const transport = getTransport(signaling);
+        if (!transport || !settings) return;
+        const list = Array.from(files);
 
-      for (const file of list) {
-        if (!validateFileSize(file.size, settings.fileMaxSizeBytes)) {
-          toast.error(t("errors.fileTooLarge"));
-          continue;
-        }
-        const id = generateTransferId();
-        addItem({
-          kind: "file",
-          id,
-          direction: "send",
-          name: file.name,
-          size: file.size,
-          mime: file.type || "application/octet-stream",
-          status: "transferring",
-          progress: 0,
-          receivedBytes: 0,
-          file,
-        });
-
-        const meta: FileMetaPayload = {
-          id,
-          name: file.name,
-          size: file.size,
-          mime: file.type || "application/octet-stream",
-          resume: settings.resumeTransferEnabled,
-        };
-        transport.send("file-meta", meta);
-
-        const accepted = await waitForTransferResponse(id);
-        if (!accepted || isCancelled(id)) {
-          updateItem(id, {
-            status: isCancelled(id) ? "interrupted" : "rejected",
-          });
-          if (!isCancelled(id)) {
-            addActivity(`Transfer declined: ${file.name}`, "warn");
+        for (const file of list) {
+          if (!validateFileSize(file.size, settings.fileMaxSizeBytes)) {
+            toast.error(t("errors.fileTooLarge"));
+            continue;
           }
-          continue;
-        }
+          const id = generateTransferId();
+          addItem({
+            kind: "file",
+            id,
+            direction: "send",
+            name: file.name,
+            size: file.size,
+            mime: file.type || "application/octet-stream",
+            status: "transferring",
+            progress: 0,
+            receivedBytes: 0,
+            file,
+          });
 
-        let offset = 0;
-        const sha256 = await sha256Hex(file);
-        const ok = await sendFileChunks(transport, id, file, 0);
-        if (!ok) {
-          updateItem(id, { status: "interrupted" });
+          const meta: FileMetaPayload = {
+            id,
+            name: file.name,
+            size: file.size,
+            mime: file.type || "application/octet-stream",
+            resume: settings.resumeTransferEnabled,
+          };
+          transport.send("file-meta", meta);
+
+          const accepted = await waitForTransferResponse(id);
+          if (!accepted || isCancelled(id)) {
+            updateItem(id, {
+              status: isCancelled(id) ? "interrupted" : "rejected",
+            });
+            if (!isCancelled(id)) {
+              addActivity(`Transfer declined: ${file.name}`, "warn");
+            }
+            continue;
+          }
+
+          const ok = await sendFileChunks(transport, id, file, 0);
+          if (!ok) {
+            updateItem(id, { status: "interrupted" });
+            clearAckState(id);
+            continue;
+          }
+          const sha256 = await sha256Hex(file);
+          transport.send("file-complete", { id, ...(sha256 ? { sha256 } : {}) });
+          cancelledTransfersRef.current.delete(id);
           clearAckState(id);
-          continue;
+          updateItem(id, { status: "done", progress: 100 });
+          addActivity(`Sent ${file.name}`);
         }
-        transport.send("file-complete", { id, ...(sha256 ? { sha256 } : {}) });
-        cancelledTransfersRef.current.delete(id);
-        clearAckState(id);
-        updateItem(id, { status: "done", progress: 100 });
-        addActivity(`Sent ${file.name}`);
-      }
+      };
+
+      const next = sendQueueRef.current.then(run, run);
+      sendQueueRef.current = next;
+      return next;
     },
     [addActivity, addItem, clearAckState, isCancelled, sendFileChunks, settings, signaling, t, updateItem, waitForTransferResponse],
   );
