@@ -140,8 +140,12 @@ func (c *Client) ReadPump(ctx context.Context) {
 			return
 		}
 		if int64(len(data)) > c.maxMessageBytes {
-			log.Warn().Str("conn", c.connID).Msg("message too large")
-			return
+			log.Warn().Str("conn", c.connID).Int64("bytes", int64(len(data))).Msg("message too large")
+			_ = c.SendJSON(Envelope{
+				Type:    "error",
+				Payload: ErrorPayload{Code: "message_too_large"},
+			})
+			continue
 		}
 		var env Envelope
 		if err := json.Unmarshal(data, &env); err != nil {
